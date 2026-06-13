@@ -1,6 +1,6 @@
-# TicketPH - AI-Powered Customer Ticketing System
+# ResolvedYan - AI-Powered Customer Ticketing System
 
-Welcome to **TicketPH**, a modern, full-stack customer support and ticketing platform. Built with a focus on speed, beautiful UI/UX, and robust role-based security, this system provides everything an organization needs to manage customer inquiries efficiently while laying the groundwork for advanced AI integrations.
+Welcome to **ResolvedYan**, a modern, full-stack customer support and ticketing platform. This system provides everything an organization needs to manage customer inquiries efficiently while laying the groundwork for advanced AI integrations.
 
 ---
 
