@@ -23,7 +23,8 @@ function AdminDashboard() {
       try {
         const { data: tickets, error } = await supabase
           .from("tickets")
-          .select("*, profiles:customer_id (first_name, last_name)");
+          .select("*, profiles:customer_id (first_name, last_name)")
+          .neq("category", "Live Chat");
 
         if (error) throw error;
 

@@ -35,6 +35,7 @@ function MyTicketsPage() {
           .from("tickets")
           .select("*")
           .eq("customer_id", user.id)
+          .neq("category", "Live Chat")
           .order("created_at", { ascending: false });
 
         if (error) throw error;

@@ -32,7 +32,7 @@ function AnalyticsPage() {
     const fetchAllTickets = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from("tickets").select("*");
+        const { data, error } = await supabase.from("tickets").select("*").neq("category", "Live Chat");
         if (error) throw error;
         setTickets(data || []);
       } catch (err) {

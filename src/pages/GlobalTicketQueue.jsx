@@ -53,6 +53,7 @@ function GlobalTicketQueue() {
           *,
           profiles:customer_id (first_name, last_name)
         `)
+        .neq('category', 'Live Chat')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
