@@ -50,6 +50,17 @@ function AdminDashboard() {
     };
 
     fetchStats();
+
+    const subscription = supabase
+      .channel('admin_dashboard_tickets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, (payload) => {
+        fetchStats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   function formatActivityTime(dateString) {

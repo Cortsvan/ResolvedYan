@@ -30,6 +30,17 @@ function GlobalTicketQueue() {
 
   useEffect(() => {
     fetchTickets();
+
+    const subscription = supabase
+      .channel('tickets_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, (payload) => {
+        fetchTickets();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   const fetchTickets = async () => {

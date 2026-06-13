@@ -48,6 +48,17 @@ function CustomerDashboard() {
     };
 
     fetchDashboardData();
+
+    const subscription = supabase
+      .channel('customer_dashboard_tickets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `customer_id=eq.${user.id}` }, (payload) => {
+        fetchDashboardData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [user]);
 
   return (

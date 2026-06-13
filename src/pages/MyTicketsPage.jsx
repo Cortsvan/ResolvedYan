@@ -47,6 +47,17 @@ function MyTicketsPage() {
     };
 
     fetchTickets();
+
+    const subscription = supabase
+      .channel('my_tickets_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `customer_id=eq.${user.id}` }, (payload) => {
+        fetchTickets();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [user]);
 
   // Split tickets into active (non-Closed) and archived (Closed)

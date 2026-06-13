@@ -21,6 +21,21 @@ function TicketDetailPage() {
 
   useEffect(() => {
     fetchTicketData();
+
+    // Subscribe to both the ticket itself (for status updates) and ticket messages (for new chat replies)
+    const ticketSubscription = supabase
+      .channel(`ticket_${id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `id=eq.${id}` }, () => {
+        fetchTicketData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${id}` }, () => {
+        fetchTicketData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ticketSubscription);
+    };
   }, [id]);
 
   const fetchTicketData = async () => {
