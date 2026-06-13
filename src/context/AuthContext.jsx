@@ -111,6 +111,13 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshUserProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await handleSessionUser(session.user);
+    }
+  };
+
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -147,6 +154,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    refreshUserProfile,
   };
 
   return (

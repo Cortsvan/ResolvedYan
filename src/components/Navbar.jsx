@@ -94,9 +94,9 @@ function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-slate-600">
+                <Link to="/profile" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">
                   {user?.name}
-                </span>
+                </Link>
                 <button
                   onClick={logout}
                   className="text-sm font-medium text-slate-500 hover:text-red-600 transition-colors"
@@ -161,7 +161,9 @@ function Navbar() {
               </div>
             ) : (
               <div className="px-4 pt-4 pb-2 border-t border-slate-100 mt-2 flex justify-between items-center">
-                <span className="text-sm font-medium text-slate-600">{user?.name}</span>
+                <Link to="/profile" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-slate-600 hover:text-blue-600">
+                  {user?.name}
+                </Link>
                 <button
                   onClick={() => {
                     logout();

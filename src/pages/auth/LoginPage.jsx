@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
@@ -6,11 +6,20 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login, user } = useAuth();
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("ticketph_remembered_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,6 +28,12 @@ function LoginPage() {
 
     try {
       await login(email, password);
+
+      if (rememberMe) {
+        localStorage.setItem("ticketph_remembered_email", email);
+      } else {
+        localStorage.removeItem("ticketph_remembered_email");
+      }
 
       // Navigate back to where they came from
       // The ProtectedRoute will automatically redirect them to the correct dashboard based on their real role
@@ -113,9 +128,22 @@ function LoginPage() {
                   )}
                 </button>
               </div>
-              <div className="mt-1.5 flex justify-end">
+              <div className="mt-1.5 flex items-center justify-between">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">
+                    Remember me
+                  </label>
+                </div>
                 <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                  Forgot your password?
+                  Forgot password?
                 </Link>
               </div>
             </div>

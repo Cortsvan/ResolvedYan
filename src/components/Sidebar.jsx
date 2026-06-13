@@ -31,6 +31,7 @@ function Sidebar() {
     { icon: "📊", label: "Analytics", path: "/analytics", roles: ['staff', 'admin'] },
     { icon: "👥", label: "Customers", path: "/customers", roles: ['staff', 'admin'] },
     { icon: "🛡️", label: "Staff", path: "/staff", roles: ['admin'] },
+    { icon: "👤", label: "My Profile", path: "/profile", roles: ['customer', 'staff', 'admin'] },
   ];
 
   const visibleItems = menuItems.filter(item => item.roles.includes(user?.role));

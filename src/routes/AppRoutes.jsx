@@ -35,6 +35,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import GlobalTicketQueue from "../pages/GlobalTicketQueue";
 import CustomerManagement from "../pages/CustomerManagement";
 import StaffManagement from "../pages/StaffManagement";
+import ProfilePage from "../pages/ProfilePage";
 
 function AppRoutes() {
   return (
@@ -61,6 +62,12 @@ function AppRoutes() {
         The customer dashboard showing ticket statistics.
       */}
       <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['customer']}><CustomerDashboard /></ProtectedRoute>} />
+
+      {/* 
+        Route: /profile
+        Global profile page for managing personal info, password, and email.
+      */}
+      <Route path="/profile" element={<ProtectedRoute allowedRoles={['customer', 'staff', 'admin']}><ProfilePage /></ProtectedRoute>} />
 
       {/* 
         Route: /tickets
