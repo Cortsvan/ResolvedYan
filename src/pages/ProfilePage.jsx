@@ -131,8 +131,9 @@ function ProfilePage() {
       return;
     }
 
-    if (password.length < 6) {
-      setPasswordMsg({ type: "error", text: "Password must be at least 6 characters." });
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+    if (!passwordRegex.test(password)) {
+      setPasswordMsg({ type: "error", text: "Password must be at least 6 characters and include a letter, a number, and a special character." });
       return;
     }
 

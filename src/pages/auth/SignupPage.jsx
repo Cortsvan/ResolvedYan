@@ -23,8 +23,9 @@ function SignupPage() {
       return;
     }
     
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters");
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+    if (!passwordRegex.test(password)) {
+      setErrorMsg("Password must be at least 6 characters and include a letter, a number, and a special character");
       return;
     }
     
