@@ -48,7 +48,7 @@ function Navbar() {
             </div>
             <div className="leading-none">
               <span className="font-bold text-sm block text-slate-900 transition-colors">
-                TicketPH
+                ResolvedYan
               </span>
               <span className="text-xs text-slate-500 transition-colors">
                 Ticket Manager
@@ -94,7 +94,12 @@ function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-4">
-                <Link to="/profile" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                <Link to="/profile" className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors group">
+                  <img 
+                    src={user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}&backgroundColor=2563eb`} 
+                    alt="Profile" 
+                    className="w-7 h-7 rounded-full border border-slate-200 group-hover:border-blue-300 transition-colors object-cover"
+                  />
                   {user?.name}
                 </Link>
                 <button
@@ -161,7 +166,12 @@ function Navbar() {
               </div>
             ) : (
               <div className="px-4 pt-4 pb-2 border-t border-slate-100 mt-2 flex justify-between items-center">
-                <Link to="/profile" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-slate-600 hover:text-blue-600">
+                <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 group">
+                  <img 
+                    src={user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}&backgroundColor=2563eb`} 
+                    alt="Profile" 
+                    className="w-8 h-8 rounded-full border border-slate-200 group-hover:border-blue-300 transition-colors object-cover"
+                  />
                   {user?.name}
                 </Link>
                 <button

@@ -540,7 +540,7 @@ function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.5 21c0 1-1 2-2.5 2" />
                   </svg>
                 </div>
-                <span className="text-slate-900 font-bold text-sm">TicketPH</span>
+                <span className="text-slate-900 font-bold text-sm">ResolvedYan</span>
               </div>
               <p className="text-sm leading-relaxed max-w-xs mb-5">
                 A beginner-friendly React application built with Vite, Tailwind CSS,
@@ -589,7 +589,7 @@ function HomePage() {
           </div>
 
           <div className="border-t border-slate-200 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm font-medium">
-            <p>© 2024 TicketPH. Built for learning React.</p>
+            <p>© 2024 ResolvedYan. Built for learning React.</p>
             <p className="text-slate-500">
               Future: PostgreSQL · Node.js · n8n · OpenAI
             </p>

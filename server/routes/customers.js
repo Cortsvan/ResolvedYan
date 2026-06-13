@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, requireStaffOrAdmin } from '../middleware/auth.js';
 import { supabaseAdmin } from '../index.js';
 
 const router = express.Router();
@@ -8,7 +8,7 @@ const router = express.Router();
  * GET /api/customers/list
  * Protected endpoint for admins to fetch all customers, their ticket counts, and suspension status.
  */
-router.get('/list', requireAuth, requireAdmin, async (req, res) => {
+router.get('/list', requireAuth, requireStaffOrAdmin, async (req, res) => {
   try {
     // 1. Fetch all customer profiles and their total tickets
     // The inner select tickets(id) allows us to count them efficiently
@@ -72,7 +72,7 @@ router.get('/list', requireAuth, requireAdmin, async (req, res) => {
  * POST /api/customers/:id/suspend
  * Securely suspends a user by enforcing a ban at the Auth level.
  */
-router.post('/:id/suspend', requireAuth, requireAdmin, async (req, res) => {
+router.post('/:id/suspend', requireAuth, requireStaffOrAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.id;
 
@@ -94,7 +94,7 @@ router.post('/:id/suspend', requireAuth, requireAdmin, async (req, res) => {
  * POST /api/customers/:id/reactivate
  * Removes a suspension from a user at the Auth level.
  */
-router.post('/:id/reactivate', requireAuth, requireAdmin, async (req, res) => {
+router.post('/:id/reactivate', requireAuth, requireStaffOrAdmin, async (req, res) => {
   try {
     const targetUserId = req.params.id;
 

@@ -93,10 +93,14 @@ export function AuthProvider({ children }) {
         console.log("Profile loaded successfully:", profile.role);
       }
 
+      const firstName = profile?.first_name || authUser.user_metadata?.first_name;
+      const lastName = profile?.last_name || authUser.user_metadata?.last_name;
+      const computedName = (firstName || lastName) ? `${firstName || ''} ${lastName || ''}`.trim() : authUser.email.split('@')[0];
+
       setUser({
         id: authUser.id,
         email: authUser.email,
-        name: profile ? `${profile.first_name} ${profile.last_name}` : authUser.email.split('@')[0],
+        name: computedName,
         role: profile?.role || 'customer',
         ...profile
       });

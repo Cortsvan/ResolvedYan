@@ -38,7 +38,7 @@ function ForgotPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.5 21c0 1-1 2-2.5 2" />
             </svg>
           </div>
-          <span className="text-xl font-bold text-slate-900 tracking-tight">TicketPH</span>
+          <span className="text-xl font-bold text-slate-900 tracking-tight">ResolvedYan</span>
         </Link>
         <h2 className="mt-2 text-center text-3xl font-black text-slate-900 tracking-tight">
           Reset your password

@@ -63,3 +63,29 @@ export const requireAdmin = async (req, res, next) => {
     res.status(500).json({ error: 'Failed to verify admin permissions' });
   }
 };
+
+/**
+ * Middleware to ensure the authenticated user is a Staff or Admin
+ */
+export const requireStaffOrAdmin = async (req, res, next) => {
+  try {
+    const userId = req.user.sub;
+
+    const { supabaseAdmin } = await import('../index.js');
+    
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+      
+    if (error || !data || (data.role !== 'admin' && data.role !== 'staff')) {
+      return res.status(403).json({ error: 'Forbidden: Staff or Admin access required' });
+    }
+    
+    next();
+  } catch (err) {
+    console.error('Staff verification error:', err);
+    res.status(500).json({ error: 'Failed to verify permissions' });
+  }
+};

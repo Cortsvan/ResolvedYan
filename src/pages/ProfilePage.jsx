@@ -19,9 +19,11 @@ function ProfilePage() {
   const [emailMsg, setEmailMsg] = useState({ type: "", text: "" });
 
   // Password State
+  const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState({ type: "", text: "" });
+  const [avatarMsg, setAvatarMsg] = useState({ type: "", text: "" });
 
   useEffect(() => {
     if (user) {
@@ -34,12 +36,13 @@ function ProfilePage() {
 
   // --- Handlers ---
 
-  const handleAvatarUpload = async (e) => {
+  const handleAvatarUpload = async (event) => {
     try {
+      setAvatarMsg({ type: "", text: "" });
       setUploadingAvatar(true);
       setPersonalMsg({ type: "", text: "" });
 
-      const file = e.target.files[0];
+      const file = event.target.files[0];
       if (!file) return;
 
       const fileExt = file.name.split('.').pop();
@@ -68,11 +71,11 @@ function ProfilePage() {
 
       setAvatarUrl(publicUrl);
       await refreshUserProfile();
-      setPersonalMsg({ type: "success", text: "Profile picture updated!" });
+      setAvatarMsg({ type: "success", text: "Profile picture updated!" });
 
     } catch (error) {
       console.error("Avatar upload error:", error);
-      setPersonalMsg({ type: "error", text: error.message || "Failed to upload picture. Ensure the 'avatars' storage bucket exists and is public." });
+      setAvatarMsg({ type: "error", text: error.message || "Failed to upload picture. Ensure the 'avatars' storage bucket exists and is public." });
     } finally {
       setUploadingAvatar(false);
     }
@@ -118,6 +121,11 @@ function ProfilePage() {
     e.preventDefault();
     setPasswordMsg({ type: "", text: "" });
 
+    if (!oldPassword) {
+      setPasswordMsg({ type: "error", text: "Please enter your old password." });
+      return;
+    }
+
     if (password !== confirmPassword) {
       setPasswordMsg({ type: "error", text: "Passwords do not match." });
       return;
@@ -129,10 +137,22 @@ function ProfilePage() {
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: password });
-      if (error) throw error;
+      // Verify old password by attempting a sign-in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: oldPassword,
+      });
+
+      if (signInError) {
+        throw new Error("Incorrect old password.");
+      }
+
+      // If successful, update to the new password
+      const { error: updateError } = await supabase.auth.updateUser({ password: password });
+      if (updateError) throw updateError;
 
       setPasswordMsg({ type: "success", text: "Password updated successfully!" });
+      setOldPassword("");
       setPassword("");
       setConfirmPassword("");
     } catch (error) {
@@ -187,6 +207,11 @@ function ProfilePage() {
                   Change Picture
                 </button>
                 <p className="mt-2 text-xs text-slate-500">JPG, GIF or PNG. 1MB max.</p>
+                {avatarMsg.text && (
+                  <div className={`mt-3 p-2.5 rounded-lg text-xs font-medium ${avatarMsg.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                    {avatarMsg.text}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -275,6 +300,17 @@ function ProfilePage() {
             )}
 
             <form onSubmit={handleUpdatePassword} className="max-w-md space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Old Password</label>
+                <input
+                  type="password"
+                  required
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border-slate-300 px-3 py-2 border shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700">New Password</label>
                 <input

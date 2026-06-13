@@ -58,7 +58,7 @@ function CustomerDashboard() {
         
         <div className="relative z-10 md:w-2/3">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            Hi, {user?.user_metadata?.first_name || user?.email?.split('@')[0] || "there"}! 👋
+            Hi, {user?.name || "there"}!
           </h1>
           <p className="text-blue-100 text-lg max-w-xl">
             Welcome to your support hub. How can we help you today? Create a new ticket or check the status of your existing requests below.
@@ -141,7 +141,11 @@ function CustomerDashboard() {
               <TicketTable tickets={recentTickets} />
             ) : (
               <div className="p-12 text-center">
-                <div className="text-4xl mb-3">📭</div>
+                <div className="flex justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-slate-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.909A2.25 2.25 0 012.25 6.993V6.75" />
+                  </svg>
+                </div>
                 <h3 className="text-lg font-medium text-slate-900 mb-1">No recent tickets</h3>
                 <p className="text-slate-500">You don't have any support requests yet.</p>
               </div>
