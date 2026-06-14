@@ -6,7 +6,9 @@ import {
   createTicket, 
   updateTicket, 
   deleteTicket, 
-  postMessage 
+  postMessage,
+  getTicket,
+  getMessages
 } from '../controllers/ticketController.js';
 
 const router = express.Router();
@@ -29,6 +31,12 @@ const postMessageSchema = z.object({
 });
 
 /**
+ * GET /api/tickets/:id
+ * Get ticket details (Customer or Agent)
+ */
+router.get('/:id', requireAuth, validate(uuidSchema, 'params'), getTicket);
+
+/**
  * POST /api/tickets
  * Create a new ticket (Customer or Agent)
  */
@@ -45,6 +53,12 @@ router.put('/:id', requireAuth, validate(uuidSchema, 'params'), validate(updateT
  * Permanently delete a ticket (Staff/Admin only)
  */
 router.delete('/:id', requireAuth, requireStaffOrAdmin, validate(uuidSchema, 'params'), deleteTicket);
+
+/**
+ * GET /api/tickets/:id/messages
+ * Get messages for a ticket
+ */
+router.get('/:id/messages', requireAuth, validate(uuidSchema, 'params'), getMessages);
 
 /**
  * POST /api/tickets/:id/messages

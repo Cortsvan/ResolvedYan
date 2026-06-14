@@ -42,32 +42,20 @@ function TicketDetailPage() {
   const fetchTicketData = async () => {
     setLoading(true);
     try {
-      // Fetch ticket and customer profile
-      const { data: ticketData, error: ticketError } = await supabase
-        .from('tickets')
-        .select('*, profiles:customer_id (first_name, last_name)')
-        .eq('id', id)
-        .single();
-
-      if (ticketError) throw ticketError;
-
+      // Fetch ticket and customer profile via API
+      const ticketData = await fetchWithAuth(`/tickets/${id}`);
+      
       const formattedTicket = {
-        ...ticketData,
-        customer: ticketData.profiles ? `${ticketData.profiles.first_name} ${ticketData.profiles.last_name}` : 'Unknown'
+        ...ticketData.data,
+        customer: ticketData.data.profiles ? `${ticketData.data.profiles.first_name} ${ticketData.data.profiles.last_name}` : 'Unknown'
       };
 
       setTicket(formattedTicket);
 
-      // Fetch comments
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('ticket_messages')
-        .select('*, profiles:user_id (first_name, last_name, role)')
-        .eq('ticket_id', id)
-        .order('created_at', { ascending: true });
+      // Fetch comments via API
+      const commentsData = await fetchWithAuth(`/tickets/${id}/messages`);
 
-      if (commentsError) throw commentsError;
-
-      const formattedComments = commentsData.map(c => ({
+      const formattedComments = commentsData.data.map(c => ({
         ...c,
         author: c.profiles ? `${c.profiles.first_name} ${c.profiles.last_name}` : 'Unknown',
         role: c.profiles?.role === 'admin' || c.profiles?.role === 'staff' ? 'Agent' : 'Customer'

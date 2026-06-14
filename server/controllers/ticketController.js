@@ -1,6 +1,88 @@
 import { supabaseAdmin } from '../config/supabase.js';
 
 /**
+ * Get ticket details
+ */
+export const getTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.sub;
+
+    const { data: ticket, error } = await supabaseAdmin
+      .from('tickets')
+      .select('*, profiles:customer_id (first_name, last_name, role)')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    const isCustomer = profile?.role === 'customer';
+    if (isCustomer && ticket.customer_id !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    res.json({ success: true, data: ticket });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Get ticket messages
+ */
+export const getMessages = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.sub;
+
+    const { data: ticket, error: ticketErr } = await supabaseAdmin
+      .from('tickets')
+      .select('customer_id')
+      .eq('id', id)
+      .single();
+
+    if (ticketErr || !ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    const isCustomer = profile?.role === 'customer';
+    if (isCustomer && ticket.customer_id !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    let query = supabaseAdmin
+      .from('ticket_messages')
+      .select('*, profiles:user_id (first_name, last_name, role)')
+      .eq('ticket_id', id)
+      .order('created_at', { ascending: true });
+
+    if (isCustomer) {
+      query = query.eq('is_internal', false);
+    }
+
+    const { data: messages, error } = await query;
+
+    if (error) throw error;
+
+    res.json({ success: true, data: messages });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Create a new ticket
  * Customers can create tickets for themselves.
  */

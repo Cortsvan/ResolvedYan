@@ -80,7 +80,7 @@ function CustomerDashboard() {
         <div className="relative z-10 mt-6 md:mt-0 md:w-1/3 flex justify-end">
           <Link
             to="/tickets/new"
-            className="btn-secondary px-6 py-3 text-base font-bold text-blue-700 bg-white hover:bg-slate-50 shadow-md hover:-translate-y-0.5 whitespace-nowrap border-0"
+            className="btn-white px-6 py-3 text-base shadow-md hover:-translate-y-0.5 whitespace-nowrap border-0"
           >
             Submit a Request
           </Link>
