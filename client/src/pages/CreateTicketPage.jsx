@@ -13,7 +13,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
-import { supabase } from "../lib/supabase";
+import { fetchWithAuth } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 
 const CATEGORIES = [
@@ -112,20 +112,22 @@ function CreateTicketPage() {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.from('tickets').insert([{
-        subject: formData.subject,
-        category: formData.category,
-        description: formData.description,
-        status: 'Open',
-        priority: 'Medium', // Default priority, AI could change this later
-        customer_id: user.id
-      }]);
-
-      if (error) throw error;
+      await fetchWithAuth('/tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject: formData.subject,
+          category: formData.category,
+          description: formData.description
+        })
+      });
       
       setSubmitted(true);
     } catch (err) {
-      alert("Failed to submit ticket: " + err.message);
+      // Safely handle error which might be a parsed JSON or a generic string
+      const errMessage = err.details 
+        ? err.details.map(d => `${d.field}: ${d.message}`).join(', ') 
+        : err.message || 'Unknown error';
+      alert("Failed to submit ticket: " + errMessage);
     } finally {
       setIsSubmitting(false);
     }

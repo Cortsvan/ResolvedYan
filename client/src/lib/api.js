@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 /**
  * Helper to make authenticated requests to our Node.js backend.
@@ -40,7 +40,9 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
 
     return data;
   } catch (err) {
-    console.error(`API Error on ${endpoint}:`, err);
+    if (import.meta.env.DEV) {
+      console.error(`API Error on ${endpoint}:`, err);
+    }
     throw err;
   }
 };

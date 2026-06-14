@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { fetchWithAuth } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../layouts/DashboardLayout";
 import StatusBadge from "../components/StatusBadge";
@@ -86,29 +87,21 @@ function TicketDetailPage() {
 
     setIsReplying(true);
     try {
-      const { error: replyError } = await supabase
-        .from('ticket_messages')
-        .insert([{
-          ticket_id: id,
-          user_id: user.id,
+      await fetchWithAuth(`/tickets/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
           message: replyMessage,
           is_internal: false
-        }]);
-
-      if (replyError) throw replyError;
+        })
+      });
 
       // If customer replies to a Resolved ticket, reopen it automatically
       if (ticket.status === 'Resolved' && user?.role === 'customer') {
-        await supabase
-          .from('tickets')
-          .update({ status: 'Open', updated_at: new Date().toISOString() })
-          .eq('id', id);
+        await fetchWithAuth(`/tickets/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ status: 'Open' })
+        });
         setTicket(prev => ({ ...prev, status: 'Open' }));
-      } else {
-        await supabase
-          .from('tickets')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', id);
       }
 
       setReplyMessage("");
@@ -122,11 +115,10 @@ function TicketDetailPage() {
 
   const handleReopen = async () => {
     try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ status: 'Open', updated_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
+      await fetchWithAuth(`/tickets/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'Open' })
+      });
       setTicket(prev => ({ ...prev, status: 'Open' }));
     } catch (err) {
       alert("Failed to reopen ticket: " + err.message);
@@ -139,12 +131,9 @@ function TicketDetailPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await fetchWithAuth(`/tickets/${id}`, {
+        method: 'DELETE'
+      });
 
       navigate('/tickets');
     } catch (err) {

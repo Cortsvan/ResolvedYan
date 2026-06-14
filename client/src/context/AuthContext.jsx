@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
         try {
           await fetchWithAuth('/auth/verify');
         } catch (error) {
-          console.warn("Real-time ban detected. Forcing logout.");
+          if (import.meta.env.DEV) console.warn("Real-time ban detected. Forcing logout.");
           await supabase.auth.signOut();
           setIsAuthenticated(false);
           setUser(null);
@@ -84,13 +84,15 @@ export function AuthProvider({ children }) {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching profile (code:", error.code, "):", error.message);
+        if (import.meta.env.DEV) console.error("Error fetching profile (code:", error.code, "):", error.message);
+        throw error;
       }
 
       if (!profile) {
-        console.warn("No profile found for user:", authUser.id, "- defaulting to customer");
+        if (import.meta.env.DEV) console.warn("No profile found for user:", authUser.id);
+        throw new Error("User profile not found in database.");
       } else {
-        console.log("Profile loaded successfully:", profile.role);
+        if (import.meta.env.DEV) console.log("Profile loaded successfully:", profile.role);
       }
 
       const firstName = profile?.first_name || authUser.user_metadata?.first_name;
@@ -101,15 +103,17 @@ export function AuthProvider({ children }) {
         id: authUser.id,
         email: authUser.email,
         name: computedName,
-        role: profile?.role || 'customer',
+        role: profile.role,
         ...profile
       });
       setIsAuthenticated(true);
     } catch (err) {
-      console.error("Unexpected error fetching user profile:", err);
-      // Still set the user so they can at least be logged in
-      setUser({ id: authUser.id, email: authUser.email, role: 'customer' });
-      setIsAuthenticated(true);
+      if (import.meta.env.DEV) console.error("Unexpected error fetching user profile:", err);
+      // Security fix: If we can't reliably determine the user's role, we MUST NOT let them proceed.
+      // Silently falling back to 'customer' is dangerous.
+      await supabase.auth.signOut();
+      setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }

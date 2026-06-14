@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import { fetchWithAuth } from "../lib/api";
 import DashboardLayout from "../layouts/DashboardLayout";
 
 function ProfilePage() {
@@ -47,7 +48,7 @@ function ProfilePage() {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       // 1. Upload to Supabase Storage 'avatars' bucket
       const { error: uploadError } = await supabase.storage
@@ -61,13 +62,11 @@ function ProfilePage() {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // 3. Update Profiles Table
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
+      // 3. Update Profiles Table via Backend API
+      await fetchWithAuth('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ avatar_url: publicUrl })
+      });
 
       setAvatarUrl(publicUrl);
       await refreshUserProfile();
@@ -86,15 +85,13 @@ function ProfilePage() {
     setPersonalMsg({ type: "", text: "" });
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
+      await fetchWithAuth('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
           first_name: firstName,
           last_name: lastName,
         })
-        .eq('id', user.id);
-
-      if (error) throw error;
+      });
 
       await refreshUserProfile();
       setPersonalMsg({ type: "success", text: "Personal information updated successfully!" });

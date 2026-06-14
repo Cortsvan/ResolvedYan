@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { fetchWithAuth } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../layouts/DashboardLayout";
 import TicketTable from "../components/TicketTable";
 
@@ -84,12 +85,10 @@ function GlobalTicketQueue() {
 
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', ticketId);
-        
-      if (error) throw error;
+      await fetchWithAuth(`/tickets/${ticketId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus })
+      });
       
       // Optimistic update
       setTickets((prevTickets) =>

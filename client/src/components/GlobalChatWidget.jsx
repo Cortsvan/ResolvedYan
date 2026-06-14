@@ -148,26 +148,32 @@ function GlobalChatWidget() {
       }
     }
 
-    const { data, error } = await supabase.from('tickets').insert([{
-      subject,
-      category: 'Live Chat',
-      description: 'Customer requested live chat support.',
-      status: 'Open',
-      customer_id: user.id
-    }]).select().single();
+    try {
+      const { data } = await fetchWithAuth('/tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject,
+          category: 'Live Chat',
+          description: 'Customer requested live chat support.'
+        })
+      });
 
-    if (!error && data) {
-      setCustomerLiveChat(data);
-      setCustomerMessages([]);
+      if (data) {
+        setCustomerLiveChat(data);
+        setCustomerMessages([]);
 
-      if (autoMessage) {
-        await supabase.from('ticket_messages').insert([{
-          ticket_id: data.id,
-          user_id: user.id,
-          message: autoMessage,
-          is_internal: false
-        }]);
+        if (autoMessage) {
+          await fetchWithAuth(`/tickets/${data.id}/messages`, {
+            method: 'POST',
+            body: JSON.stringify({
+              message: autoMessage,
+              is_internal: false
+            })
+          });
+        }
       }
+    } catch (error) {
+      console.error("Failed to start live chat:", error);
     }
   };
 
@@ -196,20 +202,27 @@ function GlobalChatWidget() {
 
     const msg = customerInput;
     setCustomerInput("");
-    await supabase.from('ticket_messages').insert([{
-      ticket_id: customerLiveChat.id,
-      user_id: user.id,
-      message: msg,
-      is_internal: false
-    }]);
+    
+    try {
+      await fetchWithAuth(`/tickets/${customerLiveChat.id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message: msg,
+          is_internal: false
+        })
+      });
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
   };
 
   const deleteArchivedChat = async (e, chatId) => {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this conversation forever?")) return;
 
-    const { error } = await supabase.from('tickets').delete().eq('id', chatId);
-    if (error) {
+    try {
+      await fetchWithAuth(`/tickets/${chatId}`, { method: 'DELETE' });
+    } catch (error) {
       console.error("Failed to delete chat:", error);
       alert("Failed to delete chat. You might not have permission.");
       return;
@@ -264,7 +277,10 @@ function GlobalChatWidget() {
     setActiveChatId(req.id);
     fetchAgentMessages(req.id);
     if (req.status === 'Open') {
-      supabase.from('tickets').update({ status: 'In Progress' }).eq('id', req.id).then(() => fetchAgentQueue());
+      fetchWithAuth(`/tickets/${req.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'In Progress' })
+      }).then(() => fetchAgentQueue()).catch(console.error);
     }
   };
 
@@ -274,12 +290,17 @@ function GlobalChatWidget() {
 
     const msg = agentInput;
     setAgentInput("");
-    await supabase.from('ticket_messages').insert([{
-      ticket_id: activeChatId,
-      user_id: user.id,
-      message: msg,
-      is_internal: false
-    }]);
+    try {
+      await fetchWithAuth(`/tickets/${activeChatId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+          message: msg,
+          is_internal: false
+        })
+      });
+    } catch (error) {
+      console.error("Failed to send agent message:", error);
+    }
   };
 
   const resolveAgentChat = async () => {
@@ -344,9 +365,29 @@ function GlobalChatWidget() {
       const isMe = msg.user_id === currentUserId;
       const showTimestamp = index === messages.length - 1 || messages[index + 1].user_id !== msg.user_id;
 
-      const isSenderAgent = msg.profiles?.role === 'staff' || msg.profiles?.role === 'admin';
-      const senderName = isSenderAgent ? 'Agent' : (msg.profiles?.first_name ? `${msg.profiles.first_name} ${msg.profiles.last_name || ''}`.trim() : 'Customer');
-      const avatarUrl = isSenderAgent
+      let isSenderAgent = false;
+      if (msg.profiles?.role === 'staff' || msg.profiles?.role === 'admin') {
+        isSenderAgent = true;
+      } else if (user?.role === 'customer' && !isMe) {
+        isSenderAgent = true;
+      } else if ((user?.role === 'staff' || user?.role === 'admin') && isMe) {
+        isSenderAgent = true;
+      }
+
+      const isSystemMessage = msg.message?.startsWith('System: ');
+      let senderName = 'Customer';
+      
+      if (isSystemMessage) {
+        senderName = 'System';
+      } else if (isSenderAgent) {
+        senderName = 'Agent';
+      } else if (msg.profiles?.first_name) {
+        senderName = `${msg.profiles.first_name} ${msg.profiles.last_name || ''}`.trim();
+      }
+
+      const avatarUrl = isSystemMessage
+        ? `https://api.dicebear.com/7.x/initials/svg?seed=Sys&backgroundColor=64748b`
+        : isSenderAgent
         ? `https://api.dicebear.com/7.x/initials/svg?seed=Agent&backgroundColor=2563eb`
         : (msg.profiles?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${senderName}&backgroundColor=2563eb`);
 
@@ -540,9 +581,11 @@ function GlobalChatWidget() {
                           <h5 className="font-semibold text-slate-700 text-[13px] truncate pr-6">{chat.subject}</h5>
                           <div className="flex justify-between items-center mt-1">
                             <p className="text-[11px] text-slate-500">{new Date(chat.created_at).toLocaleDateString()}</p>
-                            <button onClick={(e) => deleteArchivedChat(e, chat.id)} className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Delete conversation">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
-                            </button>
+                            {user?.role !== 'customer' && (
+                              <button onClick={(e) => deleteArchivedChat(e, chat.id)} className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Delete conversation">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}

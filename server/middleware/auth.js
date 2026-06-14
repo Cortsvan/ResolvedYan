@@ -1,10 +1,9 @@
-import jwt from 'jsonwebtoken';
 
 /**
  * Middleware to verify Supabase JWT token from the Authorization header.
  * Requests without a valid token will be rejected.
  */
-export const requireAuth = (req, res, next) => {
+export const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -14,24 +13,28 @@ export const requireAuth = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    // Note: Supabase signs JWTs with the project JWT secret.
-    // If you need strict verification, you can verify against process.env.SUPABASE_JWT_SECRET
-    // For now, we will decode it. In production, always VERIFY the signature.
-    // Since we're just scaffolding, decoding is a starting point if JWT secret isn't available.
+    const { supabaseAdmin } = await import('../config/supabase.js');
     
-    // Decoding without verification is insecure! 
-    // You should add SUPABASE_JWT_SECRET to your .env and use jwt.verify(token, process.env.SUPABASE_JWT_SECRET)
-    const decoded = jwt.decode(token);
+    // Instead of relying on local jwt.verify (which fails if Supabase switches between HS256 and RS256),
+    // we use the official Supabase Admin client to fetch and validate the user directly.
+    // This is mathematically secure and future-proof against any algorithm changes.
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     
-    if (!decoded) {
-      return res.status(401).json({ error: 'Invalid token payload' });
+    if (error || !user) {
+      console.error('Supabase Auth error:', error?.message || 'User not found');
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Attach user payload to request
-    req.user = decoded;
+    // Map the Supabase user object to our req.user format so the rest of the backend still works perfectly
+    req.user = {
+      sub: user.id,
+      email: user.email,
+      role: user.user_metadata?.role || 'customer'
+    };
+
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('Auth middleware exception:', error);
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
@@ -43,10 +46,8 @@ export const requireAdmin = async (req, res, next) => {
   try {
     const userId = req.user.sub; // 'sub' is the Supabase User ID in the JWT
 
-    // Dynamically import to avoid circular dependency issues if any
-    const { supabaseAdmin } = await import('../index.js');
+    const { supabaseAdmin } = await import('../config/supabase.js');
     
-    // Securely check the database for the user's true role
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('role')
@@ -71,7 +72,7 @@ export const requireStaffOrAdmin = async (req, res, next) => {
   try {
     const userId = req.user.sub;
 
-    const { supabaseAdmin } = await import('../index.js');
+    const { supabaseAdmin } = await import('../config/supabase.js');
     
     const { data, error } = await supabaseAdmin
       .from('profiles')
