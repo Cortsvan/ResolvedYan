@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import resolvedYanLogo from "../../assets/ResolvedYan Logo.png";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ function LoginPage() {
   const { login, user } = useAuth();
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem("ticketph_remembered_email");
+    const savedEmail = localStorage.getItem("resolvedyan_remembered_email");
     if (savedEmail) {
       setEmail(savedEmail);
       setRememberMe(true);
@@ -30,9 +31,9 @@ function LoginPage() {
       await login(email, password);
 
       if (rememberMe) {
-        localStorage.setItem("ticketph_remembered_email", email);
+        localStorage.setItem("resolvedyan_remembered_email", email);
       } else {
-        localStorage.removeItem("ticketph_remembered_email");
+        localStorage.removeItem("resolvedyan_remembered_email");
       }
 
       // Navigate back to where they came from
@@ -50,14 +51,7 @@ function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link to="/" className="flex justify-center items-center gap-2.5 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 18c0-5 4-9 9-9s9 4 9 9" />
-              <rect x="2" y="17" width="3.5" height="5" rx="1.75" fill="currentColor" stroke="none" />
-              <rect x="18.5" y="17" width="3.5" height="5" rx="1.75" fill="currentColor" stroke="none" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20.5 21c0 1-1 2-2.5 2" />
-            </svg>
-          </div>
+          <img src={resolvedYanLogo} alt="ResolvedYan" className="w-10 h-10 object-contain" />
           <span className="text-xl font-bold text-slate-900 tracking-tight">ResolvedYan</span>
         </Link>
         <h2 className="mt-2 text-center text-3xl font-black text-slate-900 tracking-tight">
@@ -69,37 +63,35 @@ function LoginPage() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm border border-slate-200 sm:rounded-2xl sm:px-10">
+        <div className="flat-card py-8 px-4 sm:px-10">
           {errorMsg && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm font-medium">
               {errorMsg}
             </div>
           )}
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-5" onSubmit={handleLogin}>
             <div>
-              <label className="block text-sm font-semibold text-slate-700" htmlFor="email">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="email">
                 Email address
               </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="admin@example.com"
-                />
-              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field"
+                placeholder="admin@example.com"
+              />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700" htmlFor="password">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="password">
                 Password
               </label>
-              <div className="mt-1 relative">
+              <div className="relative">
                 <input
                   id="password"
                   name="password"
@@ -108,13 +100,13 @@ function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="input-field pr-10"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
                 >
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -128,7 +120,8 @@ function LoginPage() {
                   )}
                 </button>
               </div>
-              <div className="mt-1.5 flex items-center justify-between">
+              
+              <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center">
                   <input
                     id="remember-me"
@@ -136,41 +129,39 @@ function LoginPage() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer"
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700 cursor-pointer">
                     Remember me
                   </label>
                 </div>
-                <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                <Link to="/forgot-password" className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors">
                   Forgot password?
                 </Link>
               </div>
             </div>
 
-
-
-            <div className="flex flex-col gap-3">
+            <div className="pt-2 flex flex-col gap-3">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                className="btn-primary w-full justify-center py-2.5 text-base shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Signing in..." : "Sign In"}
               </button>
 
-              <div className="relative my-2">
+              <div className="relative my-3">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-slate-500 font-medium">New to TicketPH?</span>
+                  <span className="px-2 bg-white text-slate-500 font-medium">New to ResolvedYan?</span>
                 </div>
               </div>
 
               <Link
                 to="/signup"
-                className="w-full flex justify-center py-2.5 px-4 border border-blue-200 rounded-lg shadow-sm text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                className="btn-secondary w-full justify-center py-2.5 text-base bg-slate-50"
               >
                 Create an Account
               </Link>

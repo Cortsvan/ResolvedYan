@@ -166,7 +166,7 @@ function TicketDetailPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center max-w-sm p-8 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div className="text-center max-w-sm p-8 flat-card">
             <div className="text-6xl mb-4">🎫</div>
             <h2 className="text-xl font-bold text-slate-900 mb-2">Ticket Not Found</h2>
             <p className="text-slate-500 text-sm mb-6">
@@ -174,7 +174,7 @@ function TicketDetailPage() {
             </p>
             <Link
               to="/tickets"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
+              className="btn-primary px-5 py-2.5 shadow-lg shadow-blue-500/20"
             >
               ← Back to Tickets
             </Link>
@@ -238,14 +238,14 @@ function TicketDetailPage() {
           {user?.role === 'admin' && (
             <button
               onClick={handleDelete}
-              className="flex-shrink-0 px-4 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-100 border border-red-200 transition-colors"
+              className="btn-secondary flex-shrink-0 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
             >
               🗑️ Delete
             </button>
           )}
           <Link
             to="/tickets/new"
-            className="flex-shrink-0 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+            className="btn-primary flex-shrink-0 px-4 py-2 shadow-sm"
           >
             + New Ticket
           </Link>
@@ -254,7 +254,7 @@ function TicketDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-5">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="flat-card p-6">
             <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
               <span className="text-lg">📝</span> Description
             </h2>
@@ -263,7 +263,7 @@ function TicketDetailPage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="flat-card p-6">
             <h2 className="font-bold text-slate-900 mb-5 flex items-center gap-2">
               <span className="text-lg">📋</span>
               Ticket Thread
@@ -358,7 +358,7 @@ function TicketDetailPage() {
                   <form onSubmit={handleReply}>
                     <textarea
                       rows="3"
-                      className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none mb-3"
+                      className="input-field resize-y mb-3"
                       placeholder="Still having issues? Let us know and we'll reopen your ticket..."
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
@@ -368,7 +368,7 @@ function TicketDetailPage() {
                       <button
                         type="submit"
                         disabled={isReplying}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        className="btn-primary px-5 py-2.5 shadow-sm disabled:opacity-50"
                       >
                         {isReplying ? "Sending..." : "Reply & Reopen"}
                       </button>
@@ -380,7 +380,7 @@ function TicketDetailPage() {
                 <form onSubmit={handleReply}>
                   <textarea
                     rows="3"
-                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none mb-3"
+                    className="input-field resize-y mb-3"
                     placeholder="Type your reply here..."
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
@@ -390,7 +390,7 @@ function TicketDetailPage() {
                     <button
                       type="submit"
                       disabled={isReplying}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      className="btn-primary px-5 py-2.5 shadow-sm disabled:opacity-50"
                     >
                       {isReplying ? "Sending..." : "Send Reply"}
                     </button>
@@ -403,7 +403,7 @@ function TicketDetailPage() {
         </div>
 
         <div className="space-y-5">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="flat-card p-5">
             <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
               <span>📋</span> Ticket Info
             </h2>
@@ -447,7 +447,7 @@ function TicketDetailPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="flat-card p-5">
             <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
               <span>⏱️</span> Timeline
             </h2>

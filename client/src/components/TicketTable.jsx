@@ -45,109 +45,98 @@ function TicketTable({ tickets, showCustomer = false, onStatusChange, isAdmin = 
 
   return (
     // "overflow-x-auto" adds horizontal scrolling on small screens
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
       <table className="w-full text-sm">
         
         {/* Table header row */}
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50/50">
-            <th className="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+          <tr className="border-b border-slate-200 bg-slate-50/50">
+            <th className="text-left py-4 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">
               Ticket ID
             </th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+            <th className="text-left py-4 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">
               Subject
             </th>
-            {/* Only show Customer column if showCustomer prop is true */}
             {showCustomer && (
-              <th className="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+              <th className="text-left py-4 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">
                 Customer
               </th>
             )}
-            {/* Category header removed */}
-            <th className="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+            <th className="text-left py-4 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">
               Priority
             </th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+            <th className="text-left py-4 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">
               Status
             </th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+            <th className="text-left py-4 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">
               Date
             </th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+            <th className="text-right py-4 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
 
         {/* Table body - one row per ticket */}
-        <tbody className="divide-y divide-gray-100">
-          {/* 
-            .map() loops through each ticket and creates a <tr> for it.
-            "key" is required by React to track which row is which.
-          */}
+        <tbody className="divide-y divide-slate-100">
           {tickets.map((ticket) => (
             <tr
               key={ticket.id}
-              className="hover:bg-indigo-50/30 transition-colors"
+              className="hover:bg-slate-50 transition-colors group"
             >
               {/* Ticket ID */}
-              <td className="py-3 px-4">
-                <span className="font-mono text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded">
+              <td className="py-4 px-6">
+                <span className="font-mono text-xs text-slate-500 font-semibold bg-slate-100 px-2 py-1 rounded">
                   {ticket.id}
                 </span>
               </td>
 
-              {/* Subject - clicking it goes to the ticket details page */}
-              <td className="py-3 px-4">
+              {/* Subject */}
+              <td className="py-4 px-6">
                 <Link
                   to={`/tickets/${ticket.id}`}
-                  className="text-gray-800 hover:text-indigo-600 font-medium transition-colors line-clamp-1 max-w-xs block"
+                  className="text-slate-900 hover:text-blue-600 font-medium transition-colors line-clamp-1 max-w-xs block"
                 >
                   {ticket.subject}
                 </Link>
               </td>
 
-              {/* Customer name (only shown if showCustomer = true) */}
+              {/* Customer */}
               {showCustomer && (
-                <td className="py-3 px-4 text-gray-600">
+                <td className="py-4 px-6 text-slate-600">
                   {ticket.customer}
                 </td>
               )}
 
-              {/* Category cell removed */}
-
               {/* Priority badge */}
-              <td className="py-3 px-4">
+              <td className="py-4 px-6">
                 <PriorityBadge priority={ticket.priority} />
               </td>
 
               {/* Status badge */}
-              <td className="py-3 px-4">
+              <td className="py-4 px-6">
                 <StatusBadge status={ticket.status} />
               </td>
 
               {/* Formatted date */}
-              <td className="py-3 px-4 text-gray-400 text-xs whitespace-nowrap">
+              <td className="py-4 px-6 text-slate-500 text-sm whitespace-nowrap">
                 {formatDate(ticket.created_at || ticket.createdAt)}
               </td>
 
               {/* Action buttons */}
-              <td className="py-3 px-4">
-                <div className="flex items-center gap-2">
-                  {/* View button - always visible */}
+              <td className="py-4 px-6 text-right">
+                <div className="flex items-center justify-end gap-2">
                   <Link
                     to={`/tickets/${ticket.id}`}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-2 py-1 rounded hover:bg-indigo-50 transition-colors"
+                    className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                   >
-                    View
+                    View Details
                   </Link>
 
-                  {/* Status change dropdown - only visible to admins */}
                   {isAdmin && onStatusChange && (
                     <select
-                      className="text-xs border border-gray-200 rounded px-1.5 py-1 text-gray-600 bg-white hover:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+                      className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 text-slate-600 bg-white hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                       value={ticket.status}
-                      // When admin selects a new status, call the function passed in
                       onChange={(e) => onStatusChange(ticket.id, e.target.value)}
                     >
                       <option value="Open">Open</option>

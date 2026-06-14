@@ -36,6 +36,8 @@ import GlobalTicketQueue from "../pages/GlobalTicketQueue";
 import CustomerManagement from "../pages/CustomerManagement";
 import StaffManagement from "../pages/StaffManagement";
 import ProfilePage from "../pages/ProfilePage";
+import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
+import TermsOfServicePage from "../pages/TermsOfServicePage";
 
 function AppRoutes() {
   return (
@@ -56,6 +58,8 @@ function AppRoutes() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms-of-service" element={<TermsOfServicePage />} />
 
       {/* 
         Route: /dashboard

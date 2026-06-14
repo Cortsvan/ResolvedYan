@@ -16,63 +16,31 @@ import React from "react";
 
 function StatCard({ title, value, icon, color = "indigo", subtitle }) {
   // -------------------------------------------------------
-  // Color themes - each color has background, text, and icon colors
+  // Color themes - applied to the icon container
   // -------------------------------------------------------
-  const colorStyles = {
-    indigo: {
-      bg: "bg-indigo-50",
-      icon: "bg-indigo-100 text-indigo-600",
-      value: "text-indigo-700",
-      border: "border-indigo-100",
-    },
-    blue: {
-      bg: "bg-blue-50",
-      icon: "bg-blue-100 text-blue-600",
-      value: "text-blue-700",
-      border: "border-blue-100",
-    },
-    yellow: {
-      bg: "bg-amber-50",
-      icon: "bg-amber-100 text-amber-600",
-      value: "text-amber-700",
-      border: "border-amber-100",
-    },
-    green: {
-      bg: "bg-emerald-50",
-      icon: "bg-emerald-100 text-emerald-600",
-      value: "text-emerald-700",
-      border: "border-emerald-100",
-    },
-    red: {
-      bg: "bg-red-50",
-      icon: "bg-red-100 text-red-600",
-      value: "text-red-700",
-      border: "border-red-100",
-    },
+  const themeColors = {
+    indigo: { iconBg: "bg-indigo-50 text-indigo-600 border-indigo-100" },
+    blue: { iconBg: "bg-blue-50 text-blue-600 border-blue-100" },
+    yellow: { iconBg: "bg-amber-50 text-amber-600 border-amber-100" },
+    green: { iconBg: "bg-emerald-50 text-emerald-600 border-emerald-100" },
+    red: { iconBg: "bg-red-50 text-red-600 border-red-100" },
   };
 
-  // Look up the colors for the given color prop, default to indigo
-  const theme = colorStyles[color] || colorStyles.indigo;
+  const theme = themeColors[color] || themeColors.indigo;
 
   return (
-    <div
-      className={`${theme.bg} rounded-xl border ${theme.border} p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`}
-    >
-      {/* Top row: title and icon */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        {/* Icon container */}
-        <div className={`${theme.icon} w-10 h-10 rounded-lg flex items-center justify-center text-lg`}>
+    <div className="flat-card p-5 group hover:border-slate-300">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm font-semibold text-slate-500 tracking-wide uppercase">{title}</p>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-colors ${theme.iconBg} group-hover:scale-105 duration-200`}>
           {icon}
         </div>
       </div>
 
-      {/* Big value number */}
-      <p className={`text-2xl font-bold ${theme.value}`}>{value}</p>
+      <p className="text-3xl font-black text-slate-900 tracking-tight">{value}</p>
 
-      {/* Optional subtitle */}
       {subtitle && (
-        <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+        <p className="text-sm font-medium text-slate-400 mt-2">{subtitle}</p>
       )}
     </div>
   );

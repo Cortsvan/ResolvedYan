@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import resolvedYanLogo from "../assets/ResolvedYan Logo.png";
 
 function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,7 +30,7 @@ function Navbar() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white border-b border-gray-200 shadow-sm"
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm"
       role="navigation"
       aria-label="Main navigation"
     >
@@ -38,20 +39,10 @@ function Navbar() {
 
           {/* ---- Brand ---- */}
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 18c0-5 4-9 9-9s9 4 9 9" />
-                <rect x="2" y="17" width="3.5" height="5" rx="1.75" fill="currentColor" stroke="none" />
-                <rect x="18.5" y="17" width="3.5" height="5" rx="1.75" fill="currentColor" stroke="none" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.5 21c0 1-1 2-2.5 2" />
-              </svg>
-            </div>
+            <img src={resolvedYanLogo} alt="ResolvedYan" className="w-8 h-8 object-contain" />
             <div className="leading-none">
-              <span className="font-bold text-sm block text-slate-900 transition-colors">
+              <span className="font-bold text-lg text-slate-900 transition-colors">
                 ResolvedYan
-              </span>
-              <span className="text-xs text-slate-500 transition-colors">
-                Ticket Manager
               </span>
             </div>
           </Link>
@@ -84,7 +75,7 @@ function Navbar() {
                 </Link>
                 <Link
                   to="/signup"
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white rounded-lg bg-blue-600 hover:bg-blue-700 shadow-sm transition-all hover:-translate-y-0.5"
+                  className="btn-primary flex items-center gap-1.5 px-4 py-2 shadow-md shadow-blue-500/20 text-sm"
                 >
                   Get Started
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -159,7 +150,7 @@ function Navbar() {
                 <Link
                   to="/signup"
                   onClick={() => setMobileOpen(false)}
-                  className="block w-full text-center py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
+                  className="btn-primary block w-full text-center py-2.5"
                 >
                   Get Started Free
                 </Link>

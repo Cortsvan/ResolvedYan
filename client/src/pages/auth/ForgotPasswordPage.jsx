@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
+import resolvedYanLogo from "../../assets/ResolvedYan Logo.png";
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -30,14 +32,7 @@ function ForgotPasswordPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link to="/" className="flex justify-center items-center gap-2.5 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 18c0-5 4-9 9-9s9 4 9 9" />
-              <rect x="2" y="17" width="3.5" height="5" rx="1.75" fill="currentColor" stroke="none"/>
-              <rect x="18.5" y="17" width="3.5" height="5" rx="1.75" fill="currentColor" stroke="none"/>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20.5 21c0 1-1 2-2.5 2" />
-            </svg>
-          </div>
+          <img src={resolvedYanLogo} alt="ResolvedYan" className="w-10 h-10 object-contain" />
           <span className="text-xl font-bold text-slate-900 tracking-tight">ResolvedYan</span>
         </Link>
         <h2 className="mt-2 text-center text-3xl font-black text-slate-900 tracking-tight">

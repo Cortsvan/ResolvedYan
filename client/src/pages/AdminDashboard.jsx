@@ -218,7 +218,7 @@ function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="flat-card p-6">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Quick Operations</h2>
           <div className="space-y-3">
             <Link to="/admin/tickets" className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group">
@@ -270,7 +270,7 @@ function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="flat-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-slate-900">Recent Activity</h2>
             <Link to="/admin/tickets" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">View All</Link>
