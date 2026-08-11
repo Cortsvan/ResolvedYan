@@ -1,23 +1,23 @@
-import { 
-  getCustomerProfilesWithTickets, 
-  listAllAuthUsers, 
-  updateAuthUser, 
-  deleteAuthUser, 
-  deleteProfile 
+import {
+  getCustomerProfilesWithTickets,
+  listAllAuthUsers,
+  updateAuthUser,
+  deleteAuthUser,
+  deleteProfile
 } from '../repositories/customerRepository.js';
 
 export const getCustomersList = async () => {
   const profiles = await getCustomerProfilesWithTickets();
   const authUsers = await listAllAuthUsers();
-  
+
   const authMap = new Map(authUsers.map(u => [u.id, u]));
 
   const customersWithStatus = profiles.map(profile => {
     const authUser = authMap.get(profile.id);
-    
-    // Calculate total tickets
-    const ticketCount = profile.tickets ? profile.tickets.length : 0;
-    
+
+    // Calculate active tickets
+    const ticketCount = profile.tickets ? profile.tickets.filter(t => t.status !== 'Closed').length : 0;
+
     // Check if suspended
     let is_suspended = false;
     if (authUser && authUser.banned_until) {

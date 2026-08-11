@@ -10,6 +10,17 @@ export const getStaffProfiles = async () => {
   return data;
 };
 
+export const getProfileById = async (userId) => {
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
+};
+
 export const deleteUserAuth = async (userId) => {
   const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
   if (error) throw error;

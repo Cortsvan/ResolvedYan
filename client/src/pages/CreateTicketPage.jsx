@@ -57,10 +57,10 @@ function CreateTicketPage() {
   function handleChange(event) {
     // Get the name and value from the input that changed
     const { name, value } = event.target;
-    
+
     // Update only the field that changed (spread operator "..." keeps others)
     setFormData({ ...formData, [name]: value });
-    
+
     // Clear the error for this field when user starts typing
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
@@ -74,23 +74,23 @@ function CreateTicketPage() {
   // -------------------------------------------------------
   function validateForm() {
     const newErrors = {};
-    
+
     if (!formData.subject.trim()) {
       newErrors.subject = "Subject is required";
     } else if (formData.subject.length < 5) {
       newErrors.subject = "Subject must be at least 5 characters";
     }
-    
+
     if (!formData.category) {
       newErrors.category = "Please select a category";
     }
-    
+
     if (!formData.description.trim()) {
       newErrors.description = "Description is required";
     } else if (formData.description.length < 20) {
       newErrors.description = "Please describe your issue in at least 20 characters";
     }
-    
+
     return newErrors;
   }
 
@@ -102,15 +102,15 @@ function CreateTicketPage() {
   // -------------------------------------------------------
   async function handleSubmit(event) {
     event.preventDefault();
-    
+
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      return; 
+      return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await fetchWithAuth('/tickets', {
         method: 'POST',
@@ -120,12 +120,12 @@ function CreateTicketPage() {
           description: formData.description
         })
       });
-      
+
       setSubmitted(true);
     } catch (err) {
       // Safely handle error which might be a parsed JSON or a generic string
-      const errMessage = err.details 
-        ? err.details.map(d => `${d.field}: ${d.message}`).join(', ') 
+      const errMessage = err.details
+        ? err.details.map(d => `${d.field}: ${d.message}`).join(', ')
         : err.message || 'Unknown error';
       alert("Failed to submit ticket: " + errMessage);
     } finally {
@@ -156,10 +156,10 @@ function CreateTicketPage() {
               📌 Subject: "{formData.subject}"
             </p>
             <p className="text-sm text-slate-400 mb-8">
-              Our AI system will analyze and categorize your ticket shortly.
+              Our AI system will analyze and prioritize your ticket shortly.
               You'll receive an email confirmation with your ticket ID.
             </p>
-            
+
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
@@ -190,7 +190,7 @@ function CreateTicketPage() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl">
-        
+
         {/* Page header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900">Submit a Support Ticket</h1>
@@ -213,7 +213,7 @@ function CreateTicketPage() {
 
         {/* The Form card */}
         <div className="flat-card p-6 sm:p-8">
-          
+
           {/*
             onSubmit calls our handleSubmit function when user clicks submit.
             "noValidate" disables the browser's default validation so we can
@@ -236,9 +236,8 @@ function CreateTicketPage() {
                 value={formData.subject}
                 onChange={handleChange}
                 placeholder="e.g., Payment was charged but account not upgraded"
-                className={`input-field ${
-                  errors.subject ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-500" : ""
-                }`}
+                className={`input-field ${errors.subject ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-500" : ""
+                  }`}
               />
               {/* Show error message if validation failed */}
               {errors.subject && (
@@ -261,9 +260,8 @@ function CreateTicketPage() {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className={`input-field cursor-pointer ${
-                  errors.category ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-500" : ""
-                }`}
+                className={`input-field cursor-pointer ${errors.category ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-500" : ""
+                  }`}
               >
                 {/* Default empty option */}
                 <option value="">Select a category...</option>
@@ -296,9 +294,8 @@ function CreateTicketPage() {
                 onChange={handleChange}
                 rows={6}
                 placeholder="Please describe your issue in detail. Include any error messages, steps to reproduce, and what you expected to happen..."
-                className={`input-field resize-y ${
-                  errors.description ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-500" : ""
-                }`}
+                className={`input-field resize-y ${errors.description ? "border-red-400 bg-red-50 focus:ring-red-500 focus:border-red-500" : ""
+                  }`}
               />
               {/* Character count helper */}
               <div className="flex justify-between items-center mt-1">
@@ -332,9 +329,8 @@ function CreateTicketPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`btn-primary w-full justify-center py-3.5 text-base shadow-lg shadow-blue-500/20 ${
-                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`btn-primary w-full justify-center py-3.5 text-base shadow-lg shadow-blue-500/20 ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
             >
               {/* Show spinner when submitting, otherwise show normal text */}
               {isSubmitting ? (

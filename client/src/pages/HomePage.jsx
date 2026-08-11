@@ -48,9 +48,9 @@ const features = [
       </svg>
     ),
     color: "bg-indigo-100 text-indigo-600",
-    title: "Smart Ticket Categorization",
-    description: "An upcoming AI feature will automatically categorize, prioritize, and route your tickets to the right agent instantly.",
-    tag: "Coming Soon ✨",
+    title: "AI Helper",
+    description: "An AI feature that will automatically analyze and prioritize your tickets to ensure critical issues are handled instantly.",
+    tag: "AI Assistance",
     isHighlighted: true,
   },
   {

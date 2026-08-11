@@ -15,7 +15,10 @@ export const deleteStaff = async (req, res, next) => {
     await removeStaffMember(targetUserId, req.user.sub);
     res.json({ success: true, message: 'Staff member successfully removed.' });
   } catch (error) {
-    if (error.message === 'You cannot delete your own admin account.') {
+    if (
+      error.message === 'You cannot delete your own admin account.' ||
+      error.message === 'You cannot remove other administrators.'
+    ) {
       return res.status(400).json({ error: error.message });
     }
     next(error);

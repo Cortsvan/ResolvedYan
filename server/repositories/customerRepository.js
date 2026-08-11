@@ -5,7 +5,7 @@ export const getCustomerProfilesWithTickets = async () => {
     .from('profiles')
     .select(`
       *,
-      tickets!tickets_customer_id_fkey (id)
+      tickets!tickets_customer_id_fkey (id, status)
     `)
     .eq('role', 'customer')
     .order('created_at', { ascending: false });

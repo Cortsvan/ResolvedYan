@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/supabase.js';
+import { prioritizeTicket } from '../services/aiService.js';
 
 /**
  * Get ticket details
@@ -91,6 +92,14 @@ export const createTicket = async (req, res, next) => {
     const userId = req.user.sub;
     const { subject, category, description } = req.body;
 
+    // Synchronously determine the priority using AI before creating the ticket
+    let aiPriority = 'Medium';
+    try {
+      aiPriority = await prioritizeTicket(subject, description);
+    } catch (aiErr) {
+      console.error("AI prioritization failed:", aiErr);
+    }
+
     const { data, error } = await supabaseAdmin
       .from('tickets')
       .insert([{
@@ -98,7 +107,7 @@ export const createTicket = async (req, res, next) => {
         category,
         description,
         status: 'Open',
-        priority: 'Medium',
+        priority: aiPriority,
         customer_id: userId
       }])
       .select()

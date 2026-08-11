@@ -219,7 +219,7 @@ function StaffManagement() {
                       </span>
 
                       {/* Delete / Cancel Button */}
-                      {user && user.id !== member.id && (
+                      {user && user.id !== member.id && member.role !== 'admin' && (
                         <button
                           onClick={() => handleDelete(member.id, member.first_name, member.last_name)}
                           className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50"

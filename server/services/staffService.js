@@ -1,9 +1,9 @@
-import { getStaffProfiles, deleteUserAuth, deleteUserProfile } from '../repositories/staffRepository.js';
+import { getStaffProfiles, getProfileById, deleteUserAuth, deleteUserProfile } from '../repositories/staffRepository.js';
 import { getUserById } from '../repositories/userRepository.js';
 
 export const getStaffList = async () => {
   const profiles = await getStaffProfiles();
-  
+
   const staffWithStatus = await Promise.all(
     (profiles || []).map(async (profile) => {
       try {
@@ -15,7 +15,7 @@ export const getStaffList = async () => {
       }
     })
   );
-  
+
   return staffWithStatus;
 };
 
@@ -23,7 +23,12 @@ export const removeStaffMember = async (targetUserId, requestingUserId) => {
   if (requestingUserId === targetUserId) {
     throw new Error('You cannot delete your own admin account.');
   }
-  
+
+  const targetProfile = await getProfileById(targetUserId);
+  if (targetProfile && targetProfile.role === 'admin') {
+    throw new Error('You cannot remove other administrators.');
+  }
+
   await deleteUserAuth(targetUserId);
   await deleteUserProfile(targetUserId);
 };

@@ -25,23 +25,23 @@ function CustomerManagement() {
   };
 
   const handleAction = async (action, id, name) => {
-    const actionText = action === 'suspend' ? 'suspend' 
-                     : action === 'reactivate' ? 'reactivate' 
-                     : 'permanently delete';
-                     
+    const actionText = action === 'suspend' ? 'suspend'
+      : action === 'reactivate' ? 'reactivate'
+        : 'permanently delete';
+
     if (!window.confirm(`Are you sure you want to ${actionText} ${name || 'this customer'}?`)) {
       return;
     }
-    
+
     try {
-      const endpoint = action === 'delete' 
+      const endpoint = action === 'delete'
         ? `/customers/${id}`
         : `/customers/${id}/${action}`;
-        
+
       const response = await fetchWithAuth(endpoint, {
         method: action === 'delete' ? 'DELETE' : 'POST'
       });
-      
+
       if (response.success) {
         fetchCustomers();
       }
@@ -106,7 +106,7 @@ function CustomerManagement() {
                         </div>
                       </div>
                     </td>
-                    
+
                     <td className="px-6 py-4">
                       {customer.is_suspended ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700 border border-red-200">
@@ -120,17 +120,17 @@ function CustomerManagement() {
                         </span>
                       )}
                     </td>
-                    
+
                     <td className="px-6 py-4 text-center">
                       <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
                         {customer.ticketCount || 0}
                       </span>
                     </td>
-                    
+
                     <td className="px-6 py-4 text-slate-500">
                       {formatDate(customer.last_sign_in_at)}
                     </td>
-                    
+
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {customer.is_suspended ? (
@@ -154,9 +154,9 @@ function CustomerManagement() {
                             </svg>
                           </button>
                         )}
-                        
+
                         <div className="w-px h-5 bg-slate-200 mx-1"></div>
-                        
+
                         <button
                           onClick={() => handleAction('delete', customer.id, customer.first_name)}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"

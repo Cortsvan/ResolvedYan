@@ -2,10 +2,10 @@ import express from 'express';
 import { z } from 'zod';
 import { requireAuth, requireStaffOrAdmin } from '../middleware/auth.js';
 import { validate, uuidSchema } from '../middleware/validate.js';
-import { 
-  createTicket, 
-  updateTicket, 
-  deleteTicket, 
+import {
+  createTicket,
+  updateTicket,
+  deleteTicket,
   postMessage,
   getTicket,
   getMessages
