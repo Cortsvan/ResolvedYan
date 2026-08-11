@@ -113,6 +113,19 @@ function TicketDetailPage() {
     }
   };
 
+  const handleStatusChange = async (e) => {
+    const newStatus = e.target.value;
+    try {
+      await fetchWithAuth(`/tickets/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus })
+      });
+      setTicket(prev => ({ ...prev, status: newStatus }));
+    } catch (err) {
+      alert("Failed to update status: " + err.message);
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this ticket? This action cannot be undone.")) {
       return;
@@ -426,7 +439,20 @@ function TicketDetailPage() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400">Status</span>
-                <StatusBadge status={ticket.status} />
+                {(user?.role === 'admin' || user?.role === 'staff') ? (
+                  <select
+                    value={ticket.status}
+                    onChange={handleStatusChange}
+                    className="px-2 py-1 text-xs border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer font-semibold"
+                  >
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                ) : (
+                  <StatusBadge status={ticket.status} />
+                )}
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400">Priority</span>

@@ -26,12 +26,17 @@ export function AuthProvider({ children }) {
           await fetchWithAuth('/auth/verify');
           await handleSessionUser(session.user);
         } catch (error) {
-          // The backend returned an error (likely 401 Unauthorized due to suspension)
-          console.warn("User account suspended or deleted. Forcing logout.");
-          await supabase.auth.signOut();
-          setIsAuthenticated(false);
-          setUser(null);
-          setLoading(false);
+          if (error.message === 'Failed to fetch') {
+            console.warn("Backend server is unreachable. Bypassing strict verify for now.");
+            await handleSessionUser(session.user);
+          } else {
+            // The backend returned an actual error (likely 401 Unauthorized due to suspension)
+            console.warn("User account suspended or deleted. Forcing logout.");
+            await supabase.auth.signOut();
+            setIsAuthenticated(false);
+            setUser(null);
+            setLoading(false);
+          }
         }
       } else {
         setLoading(false);
@@ -60,10 +65,12 @@ export function AuthProvider({ children }) {
         try {
           await fetchWithAuth('/auth/verify');
         } catch (error) {
-          if (import.meta.env.DEV) console.warn("Real-time ban detected. Forcing logout.");
-          await supabase.auth.signOut();
-          setIsAuthenticated(false);
-          setUser(null);
+          if (error.message !== 'Failed to fetch') {
+            if (import.meta.env.DEV) console.warn("Real-time ban detected. Forcing logout.");
+            await supabase.auth.signOut();
+            setIsAuthenticated(false);
+            setUser(null);
+          }
         }
       }
     }, 30000);

@@ -12,6 +12,7 @@ function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const { signup } = useAuth();
 
@@ -36,8 +37,8 @@ function SignupPage() {
       // Create user via Supabase
       await signup(firstName, lastName, email, password);
       
-      // All public signups are customers now
-      navigate("/dashboard");
+      // Show success message asking user to check email
+      setSuccess(true);
     } catch (err) {
       setErrorMsg(err.message || "Failed to create account");
     } finally {
@@ -62,13 +63,30 @@ function SignupPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flat-card py-8 px-4 sm:px-10">
-          {errorMsg && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm font-medium">
-              {errorMsg}
+          {success ? (
+            <div className="text-center animate-fade-in">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Registration Successful!</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Please check your inbox (and spam folder) for a confirmation link. You need to verify your email before logging in.
+              </p>
+              <Link to="/login" className="btn-primary w-full justify-center py-2.5 text-base shadow-sm">
+                Go to Login
+              </Link>
             </div>
-          )}
-          <form className="space-y-5" onSubmit={handleSignup}>
-            <div className="grid grid-cols-2 gap-4">
+          ) : (
+            <>
+              {errorMsg && (
+                <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm font-medium">
+                  {errorMsg}
+                </div>
+              )}
+              <form className="space-y-5" onSubmit={handleSignup}>
+                <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="firstName">
                   First Name
@@ -214,6 +232,8 @@ function SignupPage() {
               </Link>
             </div>
           </form>
+          </>
+          )}
 
         </div>
       </div>
