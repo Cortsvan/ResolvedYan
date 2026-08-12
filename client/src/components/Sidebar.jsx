@@ -81,13 +81,6 @@ function Sidebar() {
           ))}
         </nav>
 
-        {/* ---- Help Box at the bottom of the sidebar ---- */}
-        <div className="mt-6 p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <p className="text-xs font-bold text-slate-800 mb-1">🤖 AI Ready</p>
-          <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            This system is built for AI and n8n workflow integration.
-          </p>
-        </div>
       </div>
     </aside>
   );
