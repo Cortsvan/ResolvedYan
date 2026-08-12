@@ -199,18 +199,6 @@ function CreateTicketPage() {
           </p>
         </div>
 
-        {/* AI note banner */}
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex gap-3 shadow-sm">
-          <span className="text-2xl">🤖</span>
-          <div>
-            <p className="text-sm font-semibold text-blue-800">AI-Enhanced Processing</p>
-            <p className="text-xs text-blue-700/80 mt-0.5">
-              In future versions, AI will automatically classify your ticket,
-              assign priority, and route it to the right agent.
-            </p>
-          </div>
-        </div>
-
         {/* The Form card */}
         <div className="flat-card p-6 sm:p-8">
 
