@@ -15,9 +15,9 @@ const features = [
       </svg>
     ),
     color: "bg-blue-100 text-blue-600",
-    title: "Instant Live Chat",
-    description: "Get answers right away by chatting with available support agents in real-time.",
-    tag: "Fastest response",
+    title: "Live Chat",
+    description: "Let your customers chat with your support team in real-time to get instant answers.",
+    tag: "Real-time",
   },
   {
     icon: (
@@ -26,9 +26,9 @@ const features = [
       </svg>
     ),
     color: "bg-blue-100 text-blue-600",
-    title: "Secure Ticket Tracking",
-    description: "Submit a detailed request and track its progress from open to resolved in a personal dashboard.",
-    tag: "Track anytime",
+    title: "Customer Portal",
+    description: "Give your users a dedicated portal to easily submit requests and track their tickets.",
+    tag: "Ticket tracking",
   },
   {
     icon: (
@@ -37,9 +37,9 @@ const features = [
       </svg>
     ),
     color: "bg-blue-100 text-blue-600",
-    title: "24/7 Availability",
-    description: "The portal is highly available, allowing ticket submissions at any time of the day with continuous monitoring.",
-    tag: "Always on",
+    title: "Central Workspace",
+    description: "Keep all your customer support requests neatly organized and accessible in one place.",
+    tag: "Centralized",
   },
   {
     icon: (
@@ -48,21 +48,21 @@ const features = [
       </svg>
     ),
     color: "bg-indigo-100 text-indigo-600",
-    title: "AI Helper",
-    description: "An AI feature that will automatically analyze and prioritize your tickets to ensure critical issues are handled instantly.",
-    tag: "AI Assistance",
+    title: "AI Ticket Sorting",
+    description: "Use AI to automatically analyze and prioritize incoming tickets so your team knows what to fix first.",
+    tag: "AI-Powered",
     isHighlighted: true,
   },
   {
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
       </svg>
     ),
     color: "bg-blue-100 text-blue-600",
-    title: "Expert Resolution",
-    description: "Requests are automatically routed to the team member best equipped to solve the specific problem.",
-    tag: "Expert support",
+    title: "Analytics Dashboard",
+    description: "Monitor ticket volumes, and measure resolution times at a glance.",
+    tag: "Built-in analytics",
   },
   {
     icon: (
@@ -71,9 +71,9 @@ const features = [
       </svg>
     ),
     color: "bg-blue-100 text-blue-600",
-    title: "Privacy First",
-    description: "Data security is built-in. Information is encrypted and strictly accessible only to authorized personnel.",
-    tag: "Highly secure",
+    title: "Secure Data",
+    description: "Your customers' data is fully encrypted and kept completely safe from outside access.",
+    tag: "Built-in security",
   },
 ];
 
@@ -277,12 +277,11 @@ function HomePage() {
             <div className="section-label mx-auto w-fit mb-5">
               Support Features
             </div>
-            <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mb-5">
-              Everything you need to{" "}
-              <span className="text-blue-600">get answers fast</span>
+            <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mb-5 leading-tight">
+              Everything you need to <span className="text-blue-600">support your customers</span>
             </h2>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">
-              We are dedicated to providing you with the best support experience possible.
+              A powerful ticketing platform that helps your team resolve issues faster.
             </p>
           </div>
 
