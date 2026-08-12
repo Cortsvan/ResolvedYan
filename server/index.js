@@ -8,6 +8,8 @@ dotenv.config();
 
 // Initialize the app
 const app = express();
+// Trust Railway's proxy so the rate limiter can see the real IP addresses
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // Security Middleware
