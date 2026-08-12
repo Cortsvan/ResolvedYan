@@ -1,0 +1,8 @@
+{
+  "name": "ai-customer-ticketing",
+  "private": true,
+  "scripts": {
+    "build": "npm install --prefix server",
+    "start": "npm start --prefix server"
+  }
+}
