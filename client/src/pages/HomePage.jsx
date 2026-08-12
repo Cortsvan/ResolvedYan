@@ -48,8 +48,8 @@ const features = [
       </svg>
     ),
     color: "bg-indigo-100 text-indigo-600",
-    title: "AI Ticket Sorting",
-    description: "Use AI to automatically analyze and prioritize incoming tickets so your team knows what to fix first.",
+    title: "AI Ticket Prioritization",
+    description: "Use AI to automatically analyze the urgency of incoming tickets so your team knows what to fix first.",
     tag: "AI-Powered",
     isHighlighted: true,
   },
