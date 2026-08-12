@@ -38,6 +38,7 @@ import StaffManagement from "../pages/StaffManagement";
 import ProfilePage from "../pages/ProfilePage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
+import RequestDemoPage from "../pages/RequestDemoPage";
 
 function AppRoutes() {
   return (
@@ -52,6 +53,7 @@ function AppRoutes() {
         This is the first page users see.
       */}
       <Route path="/" element={<HomePage />} />
+      <Route path="/request-demo" element={<RequestDemoPage />} />
 
       {/* Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
