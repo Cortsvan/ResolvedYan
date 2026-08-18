@@ -31,7 +31,7 @@
 - **Ticket Detail View** — Full ticket history with status updates, priority badges, and live chat.
 
 ### 📊 Analytics Dashboard
-- Visual insights into ticket volume, resolution times, and team performance (Admin only).
+- Visual insights into ticket volume, resolution times, and team performance (Staff and Admin).
 
 ### 👥 Staff & Customer Management
 - **Staff Management** — Invite new staff members via email, view active staff, and manage roles.
