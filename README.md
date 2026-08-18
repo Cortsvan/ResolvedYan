@@ -1,6 +1,5 @@
 # ResolvedYan — AI-Powered Customer Ticketing System
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)
 
@@ -207,8 +206,4 @@ The React app starts on `http://localhost:5173`.
    - **Password:** Your Resend API key
 3. Add DKIM, SPF, and DMARC DNS records as instructed by Resend.
 
----
 
-## 📝 License
-
-This project is licensed under the [MIT License](LICENSE).
