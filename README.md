@@ -206,4 +206,10 @@ The React app starts on `http://localhost:5173`.
    - **Password:** Your Resend API key
 3. Add DKIM, SPF, and DMARC DNS records as instructed by Resend.
 
+---
 
+## ⚠️ Copyright
+
+© 2026 ResolvedYan. All rights reserved.
+
+This project and its source code are provided for **viewing and educational purposes only**. You may not copy, modify, distribute, or use any part of this codebase for commercial or personal projects without explicit permission.
