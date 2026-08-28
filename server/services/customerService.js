@@ -16,7 +16,7 @@ export const getCustomersList = async () => {
     const authUser = authMap.get(profile.id);
 
     // Calculate active tickets
-    const ticketCount = profile.tickets ? profile.tickets.filter(t => t.status !== 'Closed').length : 0;
+    const ticketCount = profile.tickets ? profile.tickets.filter(t => t.status !== 'Closed' && t.category !== 'Live Chat').length : 0;
 
     // Check if suspended
     let is_suspended = false;
