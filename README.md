@@ -16,7 +16,7 @@
 - Routes are protected on both the frontend (React Router) and the backend (Express middleware with Supabase JWT verification).
 
 ### 🤖 AI Ticket Prioritization
-- Incoming tickets are automatically evaluated using **Gemini 3.5 Flash-Lite** via **OpenRouter**.
+- Incoming tickets are automatically evaluated using **Nvidia Nemotron Ultra** (via OpenRouter).
 - Analyzes the subject and description to assign a priority of `Low`, `Medium`, or `High` before the ticket is saved.
 
 ### 💬 Real-Time Live Chat
@@ -81,7 +81,7 @@
 | Technology | Purpose |
 |---|---|
 | **OpenRouter** | API gateway for LLM access |
-| **Gemini 3.5 Flash-Lite** | AI ticket prioritization |
+| **Nvidia Nemotron Ultra** | AI ticket prioritization |
 | **Resend** | Custom domain email delivery (SMTP) |
 | **Web3Forms** | Contact form submissions |
 

@@ -137,7 +137,12 @@ function GlobalChatWidget() {
     if (data) setCustomerMessages(data);
   };
 
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
   const startLiveChat = async () => {
+    if (isStartingChat) return; // prevent duplicate calls
+    setIsStartingChat(true);
+
     let subject = "Live Support Request";
     let autoMessage = null;
     if (selectedFollowUpTicketId) {
@@ -174,6 +179,8 @@ function GlobalChatWidget() {
       }
     } catch (error) {
       console.error("Failed to start live chat:", error);
+    } finally {
+      setIsStartingChat(false);
     }
   };
 
@@ -567,9 +574,10 @@ function GlobalChatWidget() {
 
                 <button
                   onClick={startLiveChat}
-                  className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-8 shrink-0"
+                  disabled={isStartingChat}
+                  className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mb-8 shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <ChatIcon className="w-5 h-5" /> Start Live Chat
+                  <ChatIcon className="w-5 h-5" /> {isStartingChat ? "Starting..." : "Start Live Chat"}
                 </button>
 
                 {!isExpanded && customerArchivedChats.length > 0 && (
