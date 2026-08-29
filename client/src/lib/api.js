@@ -32,10 +32,20 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       headers,
     });
 
-    const data = await response.json();
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { error: text || `HTTP ${response.status} ${response.statusText}` };
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || 'API Request Failed');
+      const errorMsg = data?.error || `Request failed with status ${response.status}`;
+      const err = new Error(errorMsg);
+      err.status = response.status;
+      throw err;
     }
 
     return data;
