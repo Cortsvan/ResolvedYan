@@ -4,11 +4,13 @@ import { supabase } from "../lib/supabase";
 import { fetchWithAuth } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../layouts/DashboardLayout";
-import TicketTable from "../components/TicketTable";
+import StatusBadge from "../components/StatusBadge";
+import PriorityBadge from "../components/PriorityBadge";
+import CategoryBadge from "../components/CategoryBadge";
 
 const CATEGORIES = [
-  "Billing",
   "Technical Support",
+  "Billing",
   "Account",
   "Feature Request",
   "General Inquiry",
@@ -19,22 +21,19 @@ function GlobalTicketQueue() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Tab state
-  const [activeTab, setActiveTab] = useState("active"); // "active" | "archive"
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchTickets();
 
     const subscription = supabase
-      .channel('tickets_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, (payload) => {
+      .channel('global_tickets_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
         fetchTickets();
       })
       .subscribe();
@@ -47,7 +46,6 @@ function GlobalTicketQueue() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      // 1. Fetch tickets with profile joins
       const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -59,21 +57,27 @@ function GlobalTicketQueue() {
 
       if (error) throw error;
       
-      // 2. Fetch suspended customers from our backend securely
       const customersRes = await fetchWithAuth('/customers/list');
-      const suspendedIds = new Set();
-      if (customersRes.success) {
+      const customerMap = new Map();
+      if (customersRes.success && customersRes.customers) {
         customersRes.customers.forEach(c => {
-          if (c.is_suspended) suspendedIds.add(c.id);
+          customerMap.set(c.id, c);
         });
       }
       
-      // 3. Map the joined data and flag suspended authors
-      const formattedData = data.map(t => ({
-        ...t,
-        customer: t.profiles ? `${t.profiles.first_name || ''} ${t.profiles.last_name || ''}`.trim() : 'Unknown',
-        is_suspended: suspendedIds.has(t.customer_id)
-      }));
+      const formattedData = (data || []).map(t => {
+        const customerInfo = customerMap.get(t.customer_id);
+        const nameFromProfile = t.profiles ? `${t.profiles.first_name || ''} ${t.profiles.last_name || ''}`.trim() : '';
+        const nameFromCustomer = customerInfo ? `${customerInfo.first_name || ''} ${customerInfo.last_name || ''}`.trim() : '';
+        const customerName = nameFromProfile || nameFromCustomer || customerInfo?.email || 'Customer';
+
+        return {
+          ...t,
+          customerName,
+          customerEmail: customerInfo?.email || '',
+          is_suspended: customerInfo?.is_suspended || false
+        };
+      });
 
       setTickets(formattedData);
     } catch (err) {
@@ -90,7 +94,6 @@ function GlobalTicketQueue() {
         body: JSON.stringify({ status: newStatus })
       });
       
-      // Optimistic update
       setTickets((prevTickets) =>
         prevTickets.map((ticket) =>
           ticket.id === ticketId
@@ -103,189 +106,385 @@ function GlobalTicketQueue() {
     }
   };
 
-  // Split into active, archive, and suspended
-  const activeTickets = tickets.filter((t) => t.status !== "Closed" && !t.is_suspended);
-  const archivedTickets = tickets.filter((t) => t.status === "Closed" && !t.is_suspended);
-  const suspendedTickets = tickets.filter((t) => t.is_suspended);
-  
-  const sourceTickets = activeTab === "archive" ? archivedTickets 
-                      : activeTab === "suspended" ? suspendedTickets 
-                      : activeTickets;
+  // Status counts
+  const totalCount = tickets.length;
+  const openCount = tickets.filter(t => t.status === "Open").length;
+  const inProgressCount = tickets.filter(t => t.status === "In Progress").length;
+  const resolvedCount = tickets.filter(t => t.status === "Resolved").length;
+  const closedCount = tickets.filter(t => t.status === "Closed").length;
 
-  const filteredTickets = sourceTickets.filter((ticket) => {
-    const matchesStatus = statusFilter === "All" || ticket.status === statusFilter;
-    const matchesPriority = priorityFilter === "All" || ticket.priority === priorityFilter;
-    const matchesCategory = categoryFilter === "All" || ticket.category === categoryFilter;
-    
-    const q = search.toLowerCase();
+  const filteredTickets = tickets.filter((ticket) => {
+    const matchesStatus =
+      statusFilter === "All"
+        ? true
+        : statusFilter === "Active"
+        ? ticket.status !== "Closed"
+        : ticket.status === statusFilter;
+
+    const matchesPriority =
+      priorityFilter === "All" || ticket.priority === priorityFilter;
+    const matchesCategory =
+      categoryFilter === "All" || ticket.category === categoryFilter;
+
+    const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      search === "" ||
-      ticket.subject?.toLowerCase().includes(q) ||
-      ticket.customer?.toLowerCase().includes(q) ||
-      ticket.id?.toLowerCase().includes(q);
-    
+      query === "" ||
+      ticket.subject?.toLowerCase().includes(query) ||
+      String(ticket.id)?.toLowerCase().includes(query) ||
+      ticket.customerName?.toLowerCase().includes(query) ||
+      ticket.category?.toLowerCase().includes(query);
+
     return matchesStatus && matchesPriority && matchesCategory && matchesSearch;
   });
 
+  const hasActiveFilters =
+    statusFilter !== "All" ||
+    priorityFilter !== "All" ||
+    categoryFilter !== "All" ||
+    searchQuery !== "";
+
+  const clearFilters = () => {
+    setStatusFilter("All");
+    setPriorityFilter("All");
+    setCategoryFilter("All");
+    setSearchQuery("");
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   return (
     <DashboardLayout>
-      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-slate-900">Global Ticket Queue</h1>
-            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${user?.role === 'admin' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>
-              {user?.role === 'admin' ? '⚙️ Admin' : '🛡️ Staff'}
-            </span>
-          </div>
-          <p className="text-slate-500">
-            Manage and resolve all customer support tickets across the system.
-          </p>
-        </div>
-      </div>
-
-      {/* Active / Archive Tabs */}
-      <div className="flex gap-1 mb-4 bg-slate-100 p-1 rounded-xl w-fit">
-        <button
-          onClick={() => { setActiveTab("active"); setStatusFilter("All"); }}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === "active"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Active Queue
-          {activeTickets.length > 0 && (
-            <span className="ml-2 bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
-              {activeTickets.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => { setActiveTab("archive"); setStatusFilter("All"); }}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === "archive"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          🗄️ Archive
-          {archivedTickets.length > 0 && (
-            <span className="ml-2 bg-slate-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              {archivedTickets.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => { setActiveTab("suspended"); setStatusFilter("All"); }}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === "suspended"
-              ? "bg-white text-red-600 shadow-sm"
-              : "text-slate-500 hover:text-red-500"
-          }`}
-        >
-          ⛔ Suspended Users
-          {suspendedTickets.length > 0 && (
-            <span className="ml-2 bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-2 py-0.5 rounded-full">
-              {suspendedTickets.length}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Filters Section */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          
-          {/* Search input */}
-          <div className="relative flex-1">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by subject, customer, or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Resolved">Resolved</option>
-          </select>
-
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-          >
-            <option value="All">All Categories</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-          >
-            <option value="All">All Priorities</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-
-          {(statusFilter !== "All" || priorityFilter !== "All" || categoryFilter !== "All" || search !== "") && (
-            <button
-              onClick={() => {
-                setStatusFilter("All");
-                setPriorityFilter("All");
-                setCategoryFilter("All");
-                setSearch("");
-              }}
-              className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
-            >
-              ✕ Clear
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Ticket Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 border-b border-slate-100 gap-3 bg-slate-50/50">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+        
+        {/* Workspace Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
           <div>
-            <h2 className="font-bold text-slate-900">All Tickets</h2>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {filteredTickets.length} tickets shown
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Global Ticket Queue
+              </h1>
+              <span className="text-xs font-semibold px-2.5 py-0.5 flex items-center gap-1.5 rounded-full border bg-blue-50 text-blue-700 border-blue-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                Staff & Admin
+              </span>
+            </div>
+            <p className="text-slate-500 text-sm sm:text-base">
+              Unified queue of all incoming customer requests, priorities, and triage states.
             </p>
           </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchTickets}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl shadow-sm transition-all whitespace-nowrap"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4 text-slate-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              Refresh
+            </button>
+          </div>
         </div>
 
-        <div className="p-0">
-          {loading ? (
-            <div className="p-8 text-center text-slate-500">Loading tickets...</div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-500">Error: {error}</div>
-          ) : (
-            <TicketTable
-              tickets={filteredTickets}
-              showCustomer={true}
-              isAdmin={true}
-              onStatusChange={handleStatusChange}
-            />
-          )}
+        {/* Quick Status Triage Strip */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          <button
+            onClick={() => setStatusFilter("All")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${
+              statusFilter === "All"
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span>All Tickets</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusFilter === "All" ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600"}`}>
+              {totalCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("Open")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${
+              statusFilter === "Open"
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <span>Open</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusFilter === "Open" ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600"}`}>
+              {openCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("In Progress")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${
+              statusFilter === "In Progress"
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>In Progress</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusFilter === "In Progress" ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600"}`}>
+              {inProgressCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("Resolved")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${
+              statusFilter === "Resolved"
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>Resolved</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusFilter === "Resolved" ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600"}`}>
+              {resolvedCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("Closed")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${
+              statusFilter === "Closed"
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span>Archived</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusFilter === "Closed" ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600"}`}>
+              {closedCount}
+            </span>
+          </button>
         </div>
+
+        {/* Filter Bar */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            
+            {/* Search */}
+            <div className="relative flex-1">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by ticket subject, customer, or ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-9 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50/40 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+            >
+              <option value="All">All Categories</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+
+            {/* Priority Filter */}
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+            >
+              <option value="All">All Priorities</option>
+              <option value="High">High Priority</option>
+              <option value="Medium">Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-3.5 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Global Queue Table */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="p-16 text-center text-slate-500">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+              <p className="text-sm font-medium">Loading ticket queue...</p>
+            </div>
+          ) : error ? (
+            <div className="p-16 text-center text-red-600">
+              <p className="font-bold">Error loading queue</p>
+              <p className="text-xs text-slate-400 mt-1">{error}</p>
+            </div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="p-16 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-slate-900 mb-1">No tickets in this view</h3>
+              <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
+                All requests have been addressed or match zero filters.
+              </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-3 sm:px-4 w-20">ID</th>
+                  <th className="py-3 px-3 sm:px-4">Subject</th>
+                  <th className="py-3 px-3 sm:px-4">Customer</th>
+                  <th className="py-3 px-3 sm:px-4">Category</th>
+                  <th className="py-3 px-3 sm:px-4">Priority</th>
+                  <th className="py-3 px-3 sm:px-4">Status & Triage</th>
+                  <th className="py-3 px-3 sm:px-4">Created</th>
+                  <th className="py-3 px-3 sm:px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredTickets.map((ticket) => (
+                  <tr
+                    key={ticket.id}
+                    className="hover:bg-slate-50/80 transition-colors group"
+                  >
+                    <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
+                      <span className="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200" title={ticket.id}>
+                        #{String(ticket.id).substring(0, 8)}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-3 sm:px-4">
+                      <Link
+                        to={`/tickets/${ticket.id}`}
+                        className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate max-w-[160px] sm:max-w-xs block"
+                        title={ticket.subject}
+                      >
+                        {ticket.subject}
+                      </Link>
+                    </td>
+
+                    <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center border border-slate-200 flex-shrink-0">
+                          {ticket.customerName.charAt(0)}
+                        </div>
+                        <div className="max-w-[120px] truncate">
+                          <span className="font-medium text-slate-900 text-xs block truncate" title={ticket.customerName}>
+                            {ticket.customerName}
+                          </span>
+                          {ticket.is_suspended && (
+                            <span className="text-[10px] text-red-600 font-bold block">Suspended</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
+                      <CategoryBadge category={ticket.category} />
+                    </td>
+
+                    <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
+                      <PriorityBadge priority={ticket.priority} />
+                    </td>
+
+                    <td className="py-3 px-3 sm:px-4 whitespace-nowrap">
+                      <select
+                        value={ticket.status}
+                        onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                          ticket.status === 'Open'
+                            ? 'bg-sky-50 text-sky-700 border-sky-200'
+                            : ticket.status === 'In Progress'
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : ticket.status === 'Resolved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}
+                      >
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+                    </td>
+
+                    <td className="py-3 px-3 sm:px-4 whitespace-nowrap text-xs text-slate-500">
+                      {formatDate(ticket.created_at)}
+                    </td>
+
+                    <td className="py-3 px-3 sm:px-4 text-right whitespace-nowrap">
+                      <Link
+                        to={`/tickets/${ticket.id}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 text-xs font-semibold rounded-lg transition-colors border border-slate-200 hover:border-blue-200"
+                      >
+                        <span>Manage</span>
+                        <span>→</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          )}
+
+          <div className="p-4 border-t border-slate-100 bg-slate-50/40 flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Showing <strong>{filteredTickets.length}</strong> of <strong>{totalCount}</strong> global tickets
+            </span>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-blue-600 hover:text-blue-700 font-semibold"
+              >
+                Reset filters
+              </button>
+            )}
+          </div>
+        </div>
+
       </div>
     </DashboardLayout>
   );

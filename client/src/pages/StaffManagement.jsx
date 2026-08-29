@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
-import { supabase } from "../lib/supabase";
 import { fetchWithAuth } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -24,7 +23,6 @@ function StaffManagement() {
   const fetchStaff = async () => {
     setLoading(true);
     try {
-      // Use our backend endpoint to securely get the staff list + pending status
       const response = await fetchWithAuth('/staff/list');
       if (response.success) {
         setStaffList(response.staff || []);
@@ -36,8 +34,8 @@ function StaffManagement() {
     }
   };
 
-  const handleDelete = async (id, firstName, lastName) => {
-    const name = `${firstName || ''} ${lastName || ''}`.trim() || 'this user';
+  const handleDelete = async (id, fName, lName) => {
+    const name = `${fName || ''} ${lName || ''}`.trim() || 'this user';
     if (!window.confirm(`Are you sure you want to remove ${name}? This action cannot be undone.`)) {
       return;
     }
@@ -47,7 +45,6 @@ function StaffManagement() {
         method: 'DELETE'
       });
       if (response.success) {
-        // Refresh list
         fetchStaff();
       }
     } catch (err) {
@@ -72,9 +69,7 @@ function StaffManagement() {
       setFirstName("");
       setLastName("");
       
-      // Refresh the staff list after a short delay
       setTimeout(fetchStaff, 1500);
-      
     } catch (err) {
       setError(err.message || "Failed to send invite");
     } finally {
@@ -84,159 +79,225 @@ function StaffManagement() {
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Staff Management</h1>
-        <p className="text-slate-500">
-          Invite new staff members and view your team.
-        </p>
-      </div>
+      <div className="space-y-8 max-w-7xl mx-auto pb-12">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Staff & Team
+              </h1>
+              <span className="text-xs font-semibold px-2.5 py-0.5 flex items-center gap-1.5 rounded-full border bg-blue-50 text-blue-700 border-blue-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                Admin Console
+              </span>
+            </div>
+            <p className="text-slate-500 text-sm sm:text-base">
+              Invite team members, assign support agents, and manage team permissions.
+            </p>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Invite Form */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-blue-600">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.66-1.546 9.974 9.974 0 01-5.023 1.185A9.974 9.974 0 014 19.235z" />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchStaff}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl shadow-sm transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4 text-slate-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
-              Invite Staff
-            </h2>
+              Refresh Team
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          
+          {/* Left Column: Invite Form Card */}
+          <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-7">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.66-1.546 9.974 9.974 0 01-5.023 1.185A9.974 9.974 0 014 19.235z" />
+                </svg>
+              </div>
+              <h2 className="text-base font-bold text-slate-900">Invite Staff Member</h2>
+            </div>
+            <p className="text-xs text-slate-500 mb-6">Send an email invitation link to join the support team.</p>
 
             {message && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg flex items-start gap-2 break-words">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <div className="flex-1 min-w-0">{message}</div>
+              <div className="mb-5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
+                {message}
               </div>
             )}
-            
+
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-start gap-2 break-words">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <div className="flex-1 min-w-0">{error}</div>
+              <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                {error}
               </div>
             )}
 
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">First Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Alex"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50/30 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Last Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Smith"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50/30 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Work Email</label>
                 <input
                   type="email"
                   required
+                  placeholder="alex@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="agent@example.com"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50/30 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Jane"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Doe"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  />
-                </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={inviteLoading}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all disabled:opacity-60"
+                >
+                  {inviteLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending Invite...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                      </svg>
+                      <span>Send Team Invitation</span>
+                    </>
+                  )}
+                </button>
               </div>
-              
-              <button
-                type="submit"
-                disabled={inviteLoading}
-                className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {inviteLoading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Sending Invite...
-                  </>
-                ) : (
-                  "Send Invitation"
-                )}
-              </button>
             </form>
           </div>
-        </div>
 
-        {/* Right Column: Staff List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">Current Team</h2>
+          {/* Right Column: Staff List Table Card */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <div>
+                <h2 className="font-bold text-base text-slate-900">Current Staff & Agents</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Team members with support response and triage access</p>
+              </div>
+              <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                {staffList.length} Members
+              </span>
             </div>
-            
-            {loading ? (
-              <div className="p-8 text-center text-slate-400">Loading team members...</div>
-            ) : staffList.length === 0 ? (
-              <div className="p-8 text-center text-slate-400">No staff members found.</div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {staffList.map((member) => (
-                  <div key={member.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">
-                        {member.first_name?.charAt(0) || ''}{member.last_name?.charAt(0) || ''}
-                        {(!member.first_name && !member.last_name) ? '?' : ''}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {member.first_name} {member.last_name}
-                        </p>
-                        <p className="text-xs text-slate-500 font-mono mt-0.5">{member.id.substring(0, 8)}...</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      {member.is_pending && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                          <svg className="mr-1 h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                          Pending
-                        </span>
-                      )}
-                      
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        member.role === 'admin' 
-                          ? 'bg-amber-100 text-amber-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {member.role === 'admin' ? 'Admin' : 'Staff'}
-                      </span>
 
-                      {/* Delete / Cancel Button */}
-                      {user && user.id !== member.id && member.role !== 'admin' && (
-                        <button
-                          onClick={() => handleDelete(member.id, member.first_name, member.last_name)}
-                          className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50"
-                          title={member.is_pending ? "Cancel Invite" : "Remove Staff"}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            {loading ? (
+              <div className="p-16 text-center text-slate-500">
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-sm font-medium">Loading team members...</p>
+              </div>
+            ) : staffList.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                <p className="text-sm">No staff members found.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="py-3.5 px-6">Member</th>
+                      <th className="py-3.5 px-6">Role</th>
+                      <th className="py-3.5 px-6">Status</th>
+                      <th className="py-3.5 px-6 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {staffList.map((member) => {
+                      const isCurrentUser = member.id === user?.id;
+                      return (
+                        <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">
+                                {member.first_name?.charAt(0) || member.email?.charAt(0) || 'U'}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900 text-sm">
+                                  {member.first_name || ''} {member.last_name || ''}
+                                  {isCurrentUser && <span className="text-xs font-normal text-slate-400 ml-1.5">(You)</span>}
+                                </p>
+                                <p className="text-xs text-slate-500">{member.email}</p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-4 px-6">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize border ${
+                              member.role === 'admin'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                            }`}>
+                              {member.role || 'Staff'}
+                            </span>
+                          </td>
+
+                          <td className="py-4 px-6">
+                            {member.is_pending ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                Pending Invite
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Active
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-4 px-6 text-right">
+                            {!isCurrentUser && (
+                              <button
+                                onClick={() => handleDelete(member.id, member.first_name, member.last_name)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Remove staff member"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                </svg>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
+
         </div>
+
       </div>
     </DashboardLayout>
   );

@@ -23,7 +23,6 @@ function TicketDetailPage() {
   useEffect(() => {
     fetchTicketData();
 
-    // Subscribe to both the ticket itself (for status updates) and ticket messages (for new chat replies)
     const ticketSubscription = supabase
       .channel(`ticket_${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `id=eq.${id}` }, () => {
@@ -42,23 +41,22 @@ function TicketDetailPage() {
   const fetchTicketData = async () => {
     setLoading(true);
     try {
-      // Fetch ticket and customer profile via API
       const ticketData = await fetchWithAuth(`/tickets/${id}`);
       
       const formattedTicket = {
         ...ticketData.data,
-        customer: ticketData.data.profiles ? `${ticketData.data.profiles.first_name} ${ticketData.data.profiles.last_name}` : 'Unknown'
+        customer: ticketData.data.profiles ? `${ticketData.data.profiles.first_name || ''} ${ticketData.data.profiles.last_name || ''}`.trim() || ticketData.data.profiles.email || 'Customer' : 'Customer',
+        customerEmail: ticketData.data.profiles?.email || ''
       };
 
       setTicket(formattedTicket);
 
-      // Fetch comments via API
       const commentsData = await fetchWithAuth(`/tickets/${id}/messages`);
 
       const formattedComments = commentsData.data.map(c => ({
         ...c,
-        author: c.profiles ? `${c.profiles.first_name} ${c.profiles.last_name}` : 'Unknown',
-        role: c.profiles?.role === 'admin' || c.profiles?.role === 'staff' ? 'Agent' : 'Customer'
+        author: c.profiles ? `${c.profiles.first_name || ''} ${c.profiles.last_name || ''}`.trim() || c.profiles.email || 'Agent' : 'Agent',
+        role: c.profiles?.role === 'admin' || c.profiles?.role === 'staff' ? 'Staff' : 'Customer'
       }));
 
       setComments(formattedComments);
@@ -83,7 +81,6 @@ function TicketDetailPage() {
         })
       });
 
-      // If customer replies to a Resolved ticket, reopen it automatically
       if (ticket.status === 'Resolved' && user?.role === 'customer') {
         await fetchWithAuth(`/tickets/${id}`, {
           method: 'PUT',
@@ -136,7 +133,7 @@ function TicketDetailPage() {
         method: 'DELETE'
       });
 
-      navigate('/tickets');
+      navigate(user?.role === 'customer' ? '/tickets' : '/admin/tickets');
     } catch (err) {
       alert("Failed to delete ticket: " + err.message);
     }
@@ -146,7 +143,7 @@ function TicketDetailPage() {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
@@ -157,7 +154,10 @@ function TicketDetailPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-slate-500">Loading ticket details...</div>
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p className="text-sm font-medium text-slate-500">Loading ticket details...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -167,17 +167,21 @@ function TicketDetailPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center max-w-sm p-8 flat-card">
-            <div className="text-6xl mb-4">🎫</div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Ticket Not Found</h2>
-            <p className="text-slate-500 text-sm mb-6">
-              The ticket doesn't exist or you don't have access.
+          <div className="text-center max-w-sm p-8 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">Ticket Not Found</h2>
+            <p className="text-slate-500 text-xs mb-6">
+              The ticket does not exist or you don't have permission to view it.
             </p>
             <Link
-              to="/tickets"
-              className="btn-primary px-5 py-2.5 shadow-lg shadow-blue-500/20"
+              to={user?.role === 'customer' ? "/tickets" : "/admin/tickets"}
+              className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm"
             >
-              ← Back to Tickets
+              ← Return to Ticket List
             </Link>
           </div>
         </div>
@@ -185,182 +189,157 @@ function TicketDetailPage() {
     );
   }
 
-  const timeline = [
-    {
-      icon: "🎫",
-      text: "Ticket created",
-      time: ticket.created_at,
-      color: "bg-blue-100 text-blue-600",
-    },
-    ...(ticket.status === "In Progress" || ticket.status === "Resolved"
-      ? [
-        {
-          icon: "👤",
-          text: "Ticket updated",
-          time: ticket.updated_at || ticket.created_at,
-          color: "bg-yellow-100 text-yellow-600",
-        },
-      ]
-      : []),
-    ...(ticket.status === "Resolved" || ticket.status === "Closed"
-      ? [
-        {
-          icon: "✅",
-          text: "Ticket resolved",
-          time: ticket.updated_at || ticket.created_at,
-          color: "bg-green-100 text-green-600",
-        },
-      ]
-      : []),
-  ];
-
   return (
     <DashboardLayout>
-      <nav className="flex items-center gap-2 text-sm text-slate-400 mb-6">
-        <Link to="/tickets" className="hover:text-blue-600 transition-colors">
-          Tickets
-        </Link>
-        <span>›</span>
-        <span className="font-mono text-blue-600 font-semibold">{String(ticket.id).substring(0, 8)}</span>
-      </nav>
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+        
+        {/* Breadcrumbs & Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-2">
+              <Link to={user?.role === 'customer' ? "/tickets" : "/admin/tickets"} className="hover:text-blue-600 transition-colors">
+                Tickets
+              </Link>
+              <span>/</span>
+              <span className="text-slate-700 font-mono">#{String(ticket.id).substring(0, 8)}</span>
+            </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="font-mono text-sm text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">
-              {String(ticket.id).substring(0, 8)}
-            </span>
-            <StatusBadge status={ticket.status} />
-            <PriorityBadge priority={ticket.priority} />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900">{ticket.subject}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {user?.role === 'admin' && (
-            <button
-              onClick={handleDelete}
-              className="btn-secondary flex-shrink-0 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
-            >
-              🗑️ Delete
-            </button>
-          )}
-          <Link
-            to="/tickets/new"
-            className="btn-primary flex-shrink-0 px-4 py-2 shadow-sm"
-          >
-            + New Ticket
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-5">
-          <div className="flat-card p-6">
-            <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <span className="text-lg">📝</span> Description
-            </h2>
-            <p className="text-slate-600 leading-relaxed text-sm whitespace-pre-wrap">
-              {ticket.description}
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200" title={ticket.id}>
+                #{String(ticket.id).substring(0, 8)}
+              </span>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                {ticket.subject}
+              </h1>
+              <StatusBadge status={ticket.status} />
+              <PriorityBadge priority={ticket.priority} />
+            </div>
           </div>
 
-          <div className="flat-card p-6">
-            <h2 className="font-bold text-slate-900 mb-5 flex items-center gap-2">
-              <span className="text-lg">📋</span>
-              Ticket Thread
-              {comments.length > 0 && (
-                <span className="ml-2 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                  {comments.length}
-                </span>
-              )}
-            </h2>
-
-            {comments.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
-                <p className="text-3xl mb-2">💬</p>
-                <p className="text-sm">No replies yet.</p>
-                <p className="text-xs mt-1">
-                  An agent will respond soon.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4 mb-6">
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="flex gap-4 border-b border-slate-100 last:border-0 pb-5 last:pb-0"
-                  >
-                    <div
-                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold mt-0.5 ${comment.role === "Agent"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-slate-100 text-slate-600"
-                        }`}
-                    >
-                      {comment.author.charAt(0)}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="font-semibold text-slate-900">
-                          {comment.author}
-                        </span>
-                        {comment.role === "Agent" && (
-                          <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md text-xs font-semibold">
-                            Staff
-                          </span>
-                        )}
-                        <span className="text-xs text-slate-400 ml-auto">
-                          {formatDate(comment.created_at)}
-                        </span>
-                      </div>
-                      <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                        {comment.message}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            {user?.role === 'admin' && (
+              <button
+                onClick={handleDelete}
+                className="px-3.5 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Delete Ticket
+              </button>
             )}
+            <Link
+              to="/tickets/new"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all whitespace-nowrap"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              New Ticket
+            </Link>
+          </div>
+        </div>
 
-            <div className="mt-5 pt-4 border-t border-slate-100">
-              {ticket.status === 'Closed' ? (
-                // CLOSED: hard archive — no one can reply
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                    <span className="text-2xl">🔒</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-700">This ticket is archived</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {user?.role === 'customer'
-                          ? 'This ticket has been closed. If the issue persists, please submit a new ticket.'
-                          : 'This ticket is archived. You can reopen it if needed.'}
-                      </p>
+        {/* 2 Column Detail Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          
+          {/* Main Discussion Thread Column */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Description Card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-7">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                </div>
+                <h2 className="text-base font-bold text-slate-900">Request Description</h2>
+              </div>
+              <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap pl-10">
+                {ticket.description}
+              </p>
+            </div>
+
+            {/* Conversation Thread Card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-7">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-base font-bold text-slate-900">Conversation History</h2>
+                </div>
+                <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                  {comments.length} Replies
+                </span>
+              </div>
+
+              {comments.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <p className="text-sm font-medium">No replies posted yet.</p>
+                  <p className="text-xs mt-1">A support specialist will follow up shortly.</p>
+                </div>
+              ) : (
+                <div className="space-y-6 mb-8">
+                  {comments.map((comment) => {
+                    const isStaff = comment.role === "Staff";
+                    return (
+                      <div key={comment.id} className="flex gap-3.5">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 ${
+                          isStaff ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}>
+                          {comment.author.charAt(0)}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-slate-900 text-xs">{comment.author}</span>
+                            <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold border ${
+                              isStaff ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-600 border-slate-200'
+                            }`}>
+                              {comment.role}
+                            </span>
+                            <span className="text-[10px] text-slate-400 ml-auto font-medium">
+                              {formatDate(comment.created_at)}
+                            </span>
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-800 leading-relaxed whitespace-pre-wrap">
+                            {comment.message}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Reply Form */}
+              <div className="pt-6 border-t border-slate-100">
+                {ticket.status === 'Closed' ? (
+                  <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div>
+                      <p className="text-xs font-bold text-slate-700">This ticket has been closed and archived</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Replies are disabled for closed tickets.</p>
                     </div>
-                    {/* Reopen button — only for admin/staff */}
                     {(user?.role === 'admin' || user?.role === 'staff') && (
                       <button
                         onClick={handleReopen}
-                        className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors"
+                        className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg shadow-xs"
                       >
-                        ↩ Reopen
+                        Reopen Ticket
                       </button>
                     )}
                   </div>
-                </div>
-              ) : ticket.status === 'Resolved' && user?.role === 'customer' ? (
-                // RESOLVED + CUSTOMER: soft close — customer can still reply (auto-reopens ticket)
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg mb-3">
-                    <span className="text-lg">✅</span>
-                    <p className="text-xs text-emerald-700 font-medium">
-                      This ticket has been marked as resolved. Reply below if the issue persists — it will automatically reopen.
-                    </p>
-                  </div>
-                  <form onSubmit={handleReply}>
+                ) : (
+                  <form onSubmit={handleReply} className="space-y-3">
                     <textarea
                       rows="3"
-                      className="input-field resize-y mb-3"
-                      placeholder="Still having issues? Let us know and we'll reopen your ticket..."
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50/40 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 resize-y"
+                      placeholder="Type your response or update..."
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
                       required
@@ -369,122 +348,97 @@ function TicketDetailPage() {
                       <button
                         type="submit"
                         disabled={isReplying}
-                        className="btn-primary px-5 py-2.5 shadow-sm disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all disabled:opacity-60"
                       >
-                        {isReplying ? "Sending..." : "Reply & Reopen"}
+                        {isReplying ? "Sending..." : "Send Response"}
                       </button>
                     </div>
                   </form>
-                </div>
-              ) : (
-                // OPEN / IN PROGRESS: normal reply form
-                <form onSubmit={handleReply}>
-                  <textarea
-                    rows="3"
-                    className="input-field resize-y mb-3"
-                    placeholder="Type your reply here..."
-                    value={replyMessage}
-                    onChange={(e) => setReplyMessage(e.target.value)}
-                    required
-                  ></textarea>
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={isReplying}
-                      className="btn-primary px-5 py-2.5 shadow-sm disabled:opacity-50"
-                    >
-                      {isReplying ? "Sending..." : "Send Reply"}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-
-          </div>
-        </div>
-
-        <div className="space-y-5">
-          <div className="flat-card p-5">
-            <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <span>📋</span> Ticket Info
-            </h2>
-
-            <div className="space-y-3">
-              {[
-                { label: "Ticket ID", value: String(ticket.id).substring(0, 8), mono: true },
-                { label: "Customer", value: ticket.customer },
-                {
-                  label: "Created",
-                  value: formatDate(ticket.created_at),
-                },
-                {
-                  label: "Updated",
-                  value: formatDate(ticket.updated_at || ticket.created_at),
-                },
-              ].map((row) => (
-                <div key={row.label} className="flex justify-between items-start gap-3">
-                  <span className="text-xs text-slate-400 flex-shrink-0">{row.label}</span>
-                  <span
-                    className={`text-xs font-medium text-slate-700 text-right ${row.mono ? "font-mono text-blue-600" : ""
-                      }`}
-                  >
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-xs text-slate-400">Category</span>
-                <CategoryBadge category={ticket.category} />
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-400">Status</span>
-                {(user?.role === 'admin' || user?.role === 'staff') ? (
-                  <select
-                    value={ticket.status}
-                    onChange={handleStatusChange}
-                    className="px-2 py-1 text-xs border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer font-semibold"
-                  >
-                    <option value="Open">Open</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Resolved">Resolved</option>
-                    <option value="Closed">Closed</option>
-                  </select>
-                ) : (
-                  <StatusBadge status={ticket.status} />
                 )}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-400">Priority</span>
-                <PriorityBadge priority={ticket.priority} />
+
+            </div>
+
+          </div>
+
+          {/* Ticket Metadata Sidebar */}
+          <div className="space-y-6">
+            
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-sm text-slate-900">Ticket Information</h3>
+              </div>
+
+              <div className="space-y-3.5 text-xs">
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Ticket ID</span>
+                  <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200" title={ticket.id}>
+                    #{String(ticket.id).substring(0, 8)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Customer</span>
+                  <span className="font-bold text-slate-900">{ticket.customer}</span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Category</span>
+                  <CategoryBadge category={ticket.category} />
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Priority</span>
+                  <PriorityBadge priority={ticket.priority} />
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Status</span>
+                  {(user?.role === 'admin' || user?.role === 'staff') ? (
+                    <select
+                      value={ticket.status}
+                      onChange={handleStatusChange}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-lg border cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        ticket.status === 'Open'
+                          ? 'bg-sky-50 text-sky-700 border-sky-200'
+                          : ticket.status === 'In Progress'
+                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          : ticket.status === 'Resolved'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                    >
+                      <option value="Open">Open</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  ) : (
+                    <StatusBadge status={ticket.status} />
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Created</span>
+                  <span className="text-slate-700 font-medium">{formatDate(ticket.created_at)}</span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5">
+                  <span className="text-slate-400 font-medium">Last Activity</span>
+                  <span className="text-slate-700 font-medium">{formatDate(ticket.updated_at || ticket.created_at)}</span>
+                </div>
               </div>
             </div>
+
           </div>
 
-          <div className="flat-card p-5">
-            <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <span>⏱️</span> Timeline
-            </h2>
-
-            <div className="space-y-4">
-              {timeline.map((event, index) => (
-                <div key={index} className="flex gap-3">
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm ${event.color}`}>
-                    {event.icon}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">
-                      {event.text}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {formatDate(event.time)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
+
       </div>
     </DashboardLayout>
   );
