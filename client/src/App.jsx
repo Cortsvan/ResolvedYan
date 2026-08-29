@@ -27,6 +27,7 @@ import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 
 function App() {
   return (
@@ -34,7 +35,9 @@ function App() {
     // Without this, Link, useNavigate, useParams, etc. won't work.
     <AuthProvider>
       <BrowserRouter>
-        <AppRoutes />
+        <NotificationProvider>
+          <AppRoutes />
+        </NotificationProvider>
       </BrowserRouter>
     </AuthProvider>
   );

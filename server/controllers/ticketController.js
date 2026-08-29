@@ -1,5 +1,9 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { prioritizeTicket } from '../services/aiService.js';
+import { notifyStaffAndAdmin, notifyUser } from '../services/notificationService.js';
+import { sendTicketStatusEmail } from '../services/emailService.js';
+
+const APP_URL = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 /**
  * Get ticket details
@@ -23,7 +27,7 @@ export const getTicket = async (req, res, next) => {
       .eq('id', userId)
       .single();
 
-    const isCustomer = profile?.role === 'customer';
+    const isCustomer = profile?.role?.toLowerCase() === 'customer';
     if (isCustomer && ticket.customer_id !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
@@ -58,7 +62,7 @@ export const getMessages = async (req, res, next) => {
       .eq('id', userId)
       .single();
 
-    const isCustomer = profile?.role === 'customer';
+    const isCustomer = profile?.role?.toLowerCase() === 'customer';
     if (isCustomer && ticket.customer_id !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
@@ -114,6 +118,26 @@ export const createTicket = async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    // --- Notifications ---
+    const isLiveChat = category === 'Live Chat';
+
+    if (isLiveChat) {
+      await notifyStaffAndAdmin({
+        title: 'New Live Chat',
+        message: `A customer started a live chat: "${subject}"`,
+        type: 'live_chat',
+        ticketId: data.id,
+      });
+    } else {
+      await notifyStaffAndAdmin({
+        title: 'New Ticket Submitted',
+        message: `A new ticket was submitted: "${subject}"`,
+        type: 'new_ticket',
+        ticketId: data.id,
+      });
+    }
+
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -136,7 +160,7 @@ export const updateTicket = async (req, res, next) => {
       .eq('id', userId)
       .single();
 
-    const isCustomer = profile?.role === 'customer';
+    const isCustomer = profile?.role?.toLowerCase() === 'customer';
 
     // If customer, they can only reopen a ticket
     if (isCustomer) {
@@ -156,6 +180,13 @@ export const updateTicket = async (req, res, next) => {
       }
     }
 
+    // Fetch current ticket before update
+    const { data: existingTicket } = await supabaseAdmin
+      .from('tickets')
+      .select('subject, status, category, customer_id')
+      .eq('id', id)
+      .single();
+
     const updates = { updated_at: new Date().toISOString() };
     if (status !== undefined) updates.status = status;
     if (priority !== undefined) updates.priority = priority;
@@ -168,6 +199,47 @@ export const updateTicket = async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    // --- Notifications & Email on status change ---
+    if (status && existingTicket && status !== existingTicket.status) {
+      const ticketOwnerId = existingTicket.customer_id;
+      const ticketSubject = existingTicket.subject;
+
+      // In-app notification → ticket owner
+      await notifyUser({
+        userId: ticketOwnerId,
+        title: 'Ticket Status Updated',
+        message: `Your ticket "${ticketSubject}" is now ${status}.`,
+        type: 'ticket_status',
+        ticketId: id,
+      });
+
+      // Email notification → ticket owner (non-Live-Chat tickets only)
+      if (existingTicket.category !== 'Live Chat') {
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(ticketOwnerId);
+        if (authUser?.user?.email) {
+          const { data: ownerProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', ticketOwnerId)
+            .single();
+
+          const toName = ownerProfile
+            ? `${ownerProfile.first_name || ''} ${ownerProfile.last_name || ''}`.trim()
+            : 'Customer';
+
+          await sendTicketStatusEmail({
+            toEmail: authUser.user.email,
+            toName,
+            ticketId: id,
+            subject: ticketSubject,
+            status,
+            appUrl: APP_URL,
+          });
+        }
+      }
+    }
+
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -203,10 +275,10 @@ export const postMessage = async (req, res, next) => {
     const userId = req.user.sub;
     const { message, is_internal } = req.body;
 
-    // Verify ticket access
+    // Fetch ticket with category and customer_id
     const { data: ticket, error: ticketErr } = await supabaseAdmin
       .from('tickets')
-      .select('customer_id')
+      .select('customer_id, category, subject')
       .eq('id', id)
       .single();
 
@@ -216,11 +288,11 @@ export const postMessage = async (req, res, next) => {
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('role')
+      .select('role, first_name, last_name')
       .eq('id', userId)
       .single();
 
-    const isCustomer = profile?.role === 'customer';
+    const isCustomer = profile?.role?.toLowerCase() === 'customer' || ticket.customer_id === userId;
 
     if (isCustomer && ticket.customer_id !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
@@ -243,11 +315,42 @@ export const postMessage = async (req, res, next) => {
 
     if (error) throw error;
 
-    // Optionally update ticket's updated_at
+    // Update ticket's updated_at
     await supabaseAdmin
       .from('tickets')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', id);
+
+    // --- Notifications (only for non-internal messages) ---
+    if (!is_internal) {
+      const isLiveChat = ticket.category === 'Live Chat';
+      const senderName = profile
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User'
+        : 'User';
+
+      if (isCustomer) {
+        // Customer replied → notify all staff + admin
+        await notifyStaffAndAdmin({
+          title: isLiveChat ? 'Live Chat Reply' : 'Customer Replied',
+          message: isLiveChat
+            ? `Customer replied in live chat: "${ticket.subject}"`
+            : `Customer replied on ticket: "${ticket.subject}"`,
+          type: isLiveChat ? 'live_chat_reply' : 'ticket_reply',
+          ticketId: id,
+        });
+      } else {
+        // Staff/Admin replied → notify the ticket owner (customer)
+        await notifyUser({
+          userId: ticket.customer_id,
+          title: isLiveChat ? 'Agent Replied in Chat' : 'Agent Replied to Your Ticket',
+          message: isLiveChat
+            ? `${senderName} replied in your live chat.`
+            : `${senderName} replied to your ticket: "${ticket.subject}"`,
+          type: isLiveChat ? 'live_chat_reply' : 'ticket_reply',
+          ticketId: id,
+        });
+      }
+    }
 
     res.status(201).json({ success: true, data });
   } catch (err) {

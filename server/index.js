@@ -38,6 +38,7 @@ import staffRoutes from './routes/staff.js';
 import customersRoutes from './routes/customers.js';
 import authRoutes from './routes/auth.js';
 import ticketsRoutes from './routes/tickets.js';
+import notificationsRoutes from './routes/notifications.js';
 
 app.use('/api/ai', aiRoutes);
 app.use('/api/invite', inviteRoutes);
@@ -45,6 +46,7 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/customers', customersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

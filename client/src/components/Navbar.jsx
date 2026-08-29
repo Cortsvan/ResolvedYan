@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import resolvedYanLogo from "../assets/ResolvedYan Logo.png";
+import NotificationBell from "./NotificationBell";
 
 function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -84,7 +85,8 @@ function Navbar() {
                 </Link>
               </>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <NotificationBell />
                 <Link to="/profile" className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors group">
                   <img 
                     src={user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || 'User'}&backgroundColor=2563eb`} 
@@ -165,15 +167,18 @@ function Navbar() {
                   />
                   {user?.name}
                 </Link>
-                <button
-                  onClick={() => {
-                    logout();
-                    setMobileOpen(false);
-                  }}
-                  className="text-sm font-medium text-red-600 hover:text-red-700"
-                >
-                  Log out
-                </button>
+                <div className="flex items-center gap-3">
+                  <NotificationBell />
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileOpen(false);
+                    }}
+                    className="text-sm font-medium text-red-600 hover:text-red-700"
+                  >
+                    Log out
+                  </button>
+                </div>
               </div>
             )}
           </div>

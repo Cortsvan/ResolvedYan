@@ -25,6 +25,7 @@ function GlobalChatWidget() {
   const [existingTickets, setExistingTickets] = useState([]);
   const [selectedFollowUpTicketId, setSelectedFollowUpTicketId] = useState("");
   const [isResolving, setIsResolving] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   const messagesEndRefCustomer = useRef(null);
   const messagesEndRefAgent = useRef(null);
@@ -62,26 +63,35 @@ function GlobalChatWidget() {
             fetchCustomerArchivedChats();
           }
         });
-        channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${customerLiveChat.id}` }, () => {
+        channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${customerLiveChat.id}` }, (payload) => {
           fetchCustomerMessages(customerLiveChat.id);
+          if (payload.new && payload.new.user_id !== user.id && !isChatOpen) {
+            setUnreadChatCount(prev => prev + 1);
+          }
         });
       }
     } else if (user.role === 'staff' || user.role === 'admin') {
-      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `category=eq.Live Chat` }, () => {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `category=eq.Live Chat` }, (payload) => {
         fetchAgentQueue();
         fetchAgentArchivedQueue();
+        if (!isChatOpen && payload.eventType === 'INSERT') {
+          setUnreadChatCount(prev => prev + 1);
+        }
       });
-      if (activeChatId) {
-        channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${activeChatId}` }, () => {
+      channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_messages' }, (payload) => {
+        if (payload.new && payload.new.user_id !== user.id && !isChatOpen) {
+          setUnreadChatCount(prev => prev + 1);
+        }
+        if (activeChatId && payload.new && payload.new.ticket_id === activeChatId) {
           fetchAgentMessages(activeChatId);
-        });
-      }
+        }
+      });
     }
 
     channel.subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, customerLiveChat?.id, activeChatId]);
+  }, [user, customerLiveChat?.id, activeChatId, isChatOpen]);
 
   useEffect(() => { scrollToBottomCustomer(); }, [customerMessages]);
   useEffect(() => { scrollToBottomAgent(); }, [agentMessages]);
@@ -426,8 +436,20 @@ function GlobalChatWidget() {
 
   if (!isChatOpen) {
     return (
-      <button onClick={() => setIsChatOpen(true)} className="fixed bottom-6 right-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center justify-center z-[100] ring-4 ring-blue-600/20">
+      <button 
+        onClick={() => {
+          setIsChatOpen(true);
+          setUnreadChatCount(0);
+        }} 
+        className="fixed bottom-6 right-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex items-center justify-center z-[100] ring-4 ring-blue-600/20 group"
+        aria-label="Open Live Chat"
+      >
         <ChatIcon className="w-8 h-8" />
+        {unreadChatCount > 0 && (
+          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1 text-[11px] font-bold leading-none text-white bg-red-500 rounded-full ring-2 ring-white animate-bounce shadow-md">
+            +{unreadChatCount}
+          </span>
+        )}
       </button>
     );
   }
