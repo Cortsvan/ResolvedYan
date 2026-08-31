@@ -108,16 +108,18 @@ export const createTicket = async (req, res, next) => {
       }
     }
 
+    const ticketPayload = {
+      subject,
+      category,
+      description,
+      status: 'Open',
+      customer_id: userId,
+      ...(aiPriority !== null && { priority: aiPriority }),
+    };
+
     const { data, error } = await supabaseAdmin
       .from('tickets')
-      .insert([{
-        subject,
-        category,
-        description,
-        status: 'Open',
-        priority: aiPriority,
-        customer_id: userId
-      }])
+      .insert([ticketPayload])
       .select()
       .single();
 
