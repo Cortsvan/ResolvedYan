@@ -96,12 +96,16 @@ export const createTicket = async (req, res, next) => {
     const userId = req.user.sub;
     const { subject, category, description } = req.body;
 
-    // Synchronously determine the priority using AI before creating the ticket
-    let aiPriority = 'Medium';
-    try {
-      aiPriority = await prioritizeTicket(subject, description);
-    } catch (aiErr) {
-      console.error("AI prioritization failed:", aiErr);
+    // Priority only applies to regular support tickets.
+    // Live Chat is real-time by nature — no severity classification needed.
+    let aiPriority = null;
+    if (category !== 'Live Chat') {
+      try {
+        aiPriority = await prioritizeTicket(subject, description);
+      } catch (aiErr) {
+        console.error("AI prioritization failed, defaulting to Medium:", aiErr.message);
+        aiPriority = 'Medium';
+      }
     }
 
     const { data, error } = await supabaseAdmin

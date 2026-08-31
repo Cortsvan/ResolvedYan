@@ -150,45 +150,50 @@ function GlobalChatWidget() {
   const [isStartingChat, setIsStartingChat] = useState(false);
 
   const startLiveChat = async () => {
-    if (isStartingChat) return; // prevent duplicate calls
+    if (isStartingChat) return;
     setIsStartingChat(true);
 
     let subject = "Live Support Request";
     let autoMessage = null;
+    let description = 'Customer requested live chat support.';
+
     if (selectedFollowUpTicketId) {
       const selected = existingTickets.find(t => t.id === selectedFollowUpTicketId);
       if (selected) {
         subject = `Live Chat (Follow-up: ${selected.subject})`;
-        autoMessage = `I am following up on my ticket #${selected.id}: "${selected.subject}".`;
+        autoMessage = `I am following up on my ticket #${selected.id.substring(0, 8)}: "${selected.subject}".`;
+        description = autoMessage;
       }
     }
+
+    // Optimistic UI: show a placeholder chat immediately so the UI is
+    // responsive before the network request completes.
+    const placeholder = { id: null, subject, status: 'Open', _pending: true };
+    setCustomerLiveChat(placeholder);
+    setCustomerMessages([]);
 
     try {
       const { data } = await fetchWithAuth('/tickets', {
         method: 'POST',
-        body: JSON.stringify({
-          subject,
-          category: 'Live Chat',
-          description: 'Customer requested live chat support.'
-        })
+        body: JSON.stringify({ subject, category: 'Live Chat', description })
       });
 
       if (data) {
+        // Replace placeholder with real ticket
         setCustomerLiveChat(data);
-        setCustomerMessages([]);
 
+        // For follow-ups, post the first message without blocking the UI
         if (autoMessage) {
-          await fetchWithAuth(`/tickets/${data.id}/messages`, {
+          fetchWithAuth(`/tickets/${data.id}/messages`, {
             method: 'POST',
-            body: JSON.stringify({
-              message: autoMessage,
-              is_internal: false
-            })
-          });
+            body: JSON.stringify({ message: autoMessage, is_internal: false })
+          }).then(() => fetchCustomerMessages(data.id)).catch(console.error);
         }
       }
     } catch (error) {
       console.error("Failed to start live chat:", error);
+      // Roll back optimistic update on error
+      setCustomerLiveChat(null);
     } finally {
       setIsStartingChat(false);
     }
@@ -571,6 +576,7 @@ function GlobalChatWidget() {
 
           <div className={`flex-1 overflow-y-auto flex flex-col gap-3 ${isExpanded ? 'p-6 w-full' : 'p-4'}`}>
             {!customerLiveChat ? (
+              // No active chat — show start screen
               <div className="flex flex-col items-center h-full text-center px-4 overflow-y-auto pt-6 pb-2">
                 <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 shrink-0">
                   <UserIcon className="w-8 h-8" />
@@ -623,6 +629,15 @@ function GlobalChatWidget() {
                   </div>
                 )}
               </div>
+            ) : customerLiveChat._pending ? (
+              // Optimistic placeholder while ticket is being created
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 animate-pulse text-blue-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                </svg>
+                <p className="text-sm font-medium text-slate-500">Connecting you to an agent...</p>
+                <p className="text-xs text-slate-400">Please wait a moment</p>
+              </div>
             ) : (
               <>
                 <div className="text-xs text-center text-slate-400 my-2">Chat started</div>
@@ -632,7 +647,7 @@ function GlobalChatWidget() {
             )}
           </div>
 
-          {customerLiveChat && (
+          {customerLiveChat && !customerLiveChat._pending && (
             <div className="p-3 border-t border-slate-200 bg-white flex shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] w-full">
               <div className={`w-full ${isExpanded ? 'px-4' : ''}`}>
                 {isLocked ? (
